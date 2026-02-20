@@ -1,0 +1,44 @@
+name: ci/cd VagasFatec
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout codigo
+        uses: actions/checkout@v4
+
+      - name: Login docker hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{  secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      - name: build and push image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ryanmosc/vagasfatec:1
+            ryanmosc/vagasfatec:${{ github.sha }}
+  cd:
+    needs: ci
+    runs-on: ubuntu-latest
+    steps:
+      - name: deploy on vps
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            cd /opt/Fatec
+            docker compose down 
+            docker compose pull
+            docker compose up -d
