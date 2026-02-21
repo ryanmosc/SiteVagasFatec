@@ -10,6 +10,8 @@ services:
     networks:
       - backendFatec
   api:
+    depends_on:
+      - bd
     build:
       context: .
       dockerfile: Dockerfile
