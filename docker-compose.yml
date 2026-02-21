@@ -1,0 +1,28 @@
+services:
+  bd:
+    image: postgres:16
+    container_name: vagasfatecBd
+    env_file:
+      - .env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: always
+    networks:
+      - backendFatec
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vagasfatecApi
+    env_file:
+      - .env
+    ports:
+      - 8080:8080
+    networks:
+      - backendFatec
+    restart: always
+volumes:
+  postgres_data:
+networks:
+  backendFatec:
+    driver: bridge
