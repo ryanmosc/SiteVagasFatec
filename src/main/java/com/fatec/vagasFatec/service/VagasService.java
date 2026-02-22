@@ -1,6 +1,8 @@
 package com.fatec.vagasFatec.service;
 
+import com.fatec.vagasFatec.Dto.VagaDto.VagaUpdateDTO;
 import com.fatec.vagasFatec.Dto.VagaDto.VagasResponseDTO;
+import com.fatec.vagasFatec.model.Enum.StatusVaga;
 import com.fatec.vagasFatec.model.Vaga;
 import com.fatec.vagasFatec.repository.Vagarepository;
 import lombok.RequiredArgsConstructor;
@@ -11,8 +13,11 @@ import org.springframework.stereotype.Service;
 public class VagasService {
     private final Vagarepository vagarepository;
 
-    public VagasResponseDTO criarVaga (Vaga vaga){
-        Vaga vagaResponde = vagarepository.save(vaga);
+
+
+    //Metodo Auxiliar para listarVagas
+
+    private VagasResponseDTO converteVagas (Vaga vagaResponde){
         return  new VagasResponseDTO(
                 vagaResponde.getId(),
                 vagaResponde.getTituloVaga(),
@@ -29,4 +34,57 @@ public class VagasService {
         );
     }
 
+
+
+    //Criar Vaga
+    public VagasResponseDTO criarVaga (Vaga vaga){
+        Vaga vagaResponde = vagarepository.save(vaga);
+        return converteVagas(vagaResponde);
+    }
+
+    //EditarVaga
+    public VagasResponseDTO editarVaga (VagaUpdateDTO dto, Long id_vaga){
+        Vaga vaga = vagarepository.findById(id_vaga).orElseThrow(() -> new RuntimeException("Erro, vaga não encontrada"));
+
+        if (dto.tituloVaga() != null) {
+            vaga.setTituloVaga(dto.tituloVaga());
+        }
+        if (dto.descricaoVaga() != null) {
+            vaga.setDescricaoVaga(dto.descricaoVaga());
+        }
+        if (dto.cursoVaga() != null) {
+            vaga.setCursoVaga(dto.cursoVaga());
+        }
+        if (dto.tipoVaga() != null) {
+            vaga.setTipoVagaEnum(dto.tipoVaga());
+        }
+
+        if (dto.cidadeVaga() != null) {
+            vaga.setCidadeVaga(dto.cidadeVaga());
+        }
+        if (dto.bolsaAuxilio() != null) {
+            vaga.setBolsaAuxilio(dto.bolsaAuxilio());
+        }
+        if (dto.dataEncerramento() != null) {
+            vaga.setDataEncerramento(dto.dataEncerramento());
+        }
+
+        vagarepository.save(vaga);
+       return  converteVagas(vaga);
+    }
+
+    //Encerrar vaga
+
+    public void encerrarVaga(Long idVaga){
+        Vaga vaga = vagarepository.findById(idVaga).orElseThrow(() -> new RuntimeException("Vaga não encontrada"));
+        vaga.setStatusvaga(StatusVaga.ENCERRADA);
+        vagarepository.save(vaga);
+    }
+
+    //Reabrir Vaga
+    public void reabrirVaga(Long idVaga){
+        Vaga vaga = vagarepository.findById(idVaga).orElseThrow(() -> new RuntimeException("Vaga não encontrada"));
+        vaga.setStatusvaga(StatusVaga.ABERTA);
+        vagarepository.save(vaga);
+    }
 }

@@ -50,14 +50,19 @@ public class Vaga {
     private Double bolsaAuxilio;
 
     @Column(name = "dataPublicacaoVaga")
-    private LocalDateTime dataPublicacaoVaga = LocalDateTime.now();
+    private LocalDateTime dataPublicacaoVaga;
 
     @Column(name = "data_encerramento")
     private LocalDateTime dataEncerramento;
 
     @Column(name = "statusVaga")
     @Enumerated(EnumType.STRING)
-    private StatusVaga statusvaga = StatusVaga.ABERTA;
+    private StatusVaga statusvaga;
 
 
+    @PrePersist
+    public void prePersist(){
+        dataPublicacaoVaga = LocalDateTime.now();
+        statusvaga = StatusVaga.ABERTA;
+    }
 }
