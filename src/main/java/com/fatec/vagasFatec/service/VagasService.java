@@ -98,9 +98,17 @@ public class VagasService {
         vagarepository.deleteById(id);
     }
 
-    //Listar Todas as vagas
-    public List<VagasResponseDTO> listarVagas(){
-        return vagarepository.findByStatusvaga(StatusVaga.ABERTA).stream().map(Vaga -> new VagasResponseDTO(
+    //Listar Todas as vagas (menos as fechadas), e caso tiver alguma requisição de curso para filtro ele filtra
+    public List<VagasResponseDTO> listarVagas(CursosEnum curso){
+
+        List<Vaga> vagas;
+        if (curso != null){
+            vagas = vagarepository.findByStatusvagaAndCursoVaga(StatusVaga.ABERTA, curso);
+        }
+        else {
+            vagas = vagarepository.findByStatusvaga(StatusVaga.ABERTA);
+        }
+        return vagas.stream().map(Vaga -> new VagasResponseDTO(
                 Vaga.getId(),
                 Vaga.getIdEmpresa(),
                 Vaga.getTituloVaga(),
@@ -116,7 +124,11 @@ public class VagasService {
         )).toList();
     }
 
-    //Listar Minhas Vagas
+
+
+
+
+    //Listar Minhas Vagas (Lista todas as vagas da empresa em questão, ate as fechadas)
 
     public List<VagasResponseDTO> listarMinhasVagas(Long idEmpresa){
         return vagarepository.findByIdEmpresa(idEmpresa).stream().map(Vaga -> new VagasResponseDTO(

@@ -53,11 +53,14 @@ public class VagasController {
 
     //End point Publico para alunos, so vai retornar as vagas abertas
     @GetMapping
-    public ResponseEntity<List<VagasResponseDTO>> listarTodasVagas(){
+    public ResponseEntity<List<VagasResponseDTO>> listarTodasVagas(@RequestParam (required = false) CursosEnum curso){
 
-        List<VagasResponseDTO> vagas = vagasService.listarVagas();
+        List<VagasResponseDTO> vagas = vagasService.listarVagas(curso);
         return ResponseEntity.ok(vagas);
     }
+
+
+
 
     //Endpoint somente para empresas e retorna as abertas e fechadas
     @GetMapping("/{id}/minhas")
