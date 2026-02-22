@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 
 public record VagasResponseDTO (
 
-
+        Long id,
      String tituloVaga,
      String descricaoVaga,
      String cursoVaga,
