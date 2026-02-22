@@ -23,6 +23,9 @@ public class Vaga {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private  Long id;
 
+    @Column(name = "id_empresa")
+    private Long idEmpresa;
+
     @NotBlank(message = "Erro: É obrgatorio um titulo para a vaga")
     @Column(name = "tituloVaga")
     private String tituloVaga;

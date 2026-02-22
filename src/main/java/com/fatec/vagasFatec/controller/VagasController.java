@@ -10,6 +10,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/vagas")
 @RequiredArgsConstructor
@@ -30,7 +32,7 @@ public class VagasController {
     }
 
     @PatchMapping("/{id}/encerrar")
-    public ResponseEntity<Void> encerrarvaga(@PathVariable Long id){
+    public ResponseEntity<Void> encerrarVaga(@PathVariable Long id){
         vagasService.encerrarVaga(id);
         return ResponseEntity.ok().build();
     }
@@ -39,5 +41,23 @@ public class VagasController {
     public ResponseEntity<Void> reabrirvaga(@PathVariable Long id){
         vagasService.reabrirVaga(id);
         return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deletarVaga(@PathVariable Long id){
+        vagasService.deletarVaga(id);
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping
+    public ResponseEntity<List<VagasResponseDTO>> listarTodasVagas(){
+        List<VagasResponseDTO> vagas= vagasService.listarVagas();
+        return ResponseEntity.ok(vagas);
+    }
+
+    @GetMapping("/{id}/minhas")
+    public ResponseEntity<List<VagasResponseDTO>> listarMinhasVagas(@PathVariable Long id){
+        List<VagasResponseDTO> vagasResponseDTOS = vagasService.listarMinhasVagas(id);
+        return ResponseEntity.ok(vagasResponseDTOS);
     }
 }

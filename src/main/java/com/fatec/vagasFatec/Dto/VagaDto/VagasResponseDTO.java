@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 public record VagasResponseDTO (
 
         Long id,
+     Long id_empresa,
      String tituloVaga,
      String descricaoVaga,
      String cursoVaga,

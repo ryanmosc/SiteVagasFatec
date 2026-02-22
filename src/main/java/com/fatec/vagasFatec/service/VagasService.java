@@ -8,6 +8,8 @@ import com.fatec.vagasFatec.repository.Vagarepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class VagasService {
@@ -20,6 +22,7 @@ public class VagasService {
     private VagasResponseDTO converteVagas (Vaga vagaResponde){
         return  new VagasResponseDTO(
                 vagaResponde.getId(),
+                vagaResponde.getIdEmpresa(),
                 vagaResponde.getTituloVaga(),
                 vagaResponde.getDescricaoVaga(),
                 vagaResponde.getCursoVaga(),
@@ -86,5 +89,48 @@ public class VagasService {
         Vaga vaga = vagarepository.findById(idVaga).orElseThrow(() -> new RuntimeException("Vaga não encontrada"));
         vaga.setStatusvaga(StatusVaga.ABERTA);
         vagarepository.save(vaga);
+    }
+
+    //Deletar Vaga
+
+    public void deletarVaga(Long id){
+        vagarepository.deleteById(id);
+    }
+
+    //Listar Todas as vagas
+    public List<VagasResponseDTO> listarVagas(){
+        return vagarepository.findAll().stream().map(Vaga -> new VagasResponseDTO(
+                Vaga.getId(),
+                Vaga.getIdEmpresa(),
+                Vaga.getTituloVaga(),
+                Vaga.getDescricaoVaga(),
+                Vaga.getCursoVaga(),
+                Vaga.getTipoVagaEnum(),
+                Vaga.getNomeEmpresa(),
+                Vaga.getCidadeVaga(),
+                Vaga.getBolsaAuxilio(),
+                Vaga.getDataPublicacaoVaga(),
+                Vaga.getDataEncerramento(),
+                Vaga.getStatusvaga()
+        )).toList();
+    }
+
+    //Listar Minhas Vagas
+
+    public List<VagasResponseDTO> listarMinhasVagas(Long idEmpresa){
+        return vagarepository.findByIdEmpresa(idEmpresa).stream().map(Vaga -> new VagasResponseDTO(
+                Vaga.getId(),
+                Vaga.getIdEmpresa(),
+                Vaga.getTituloVaga(),
+                Vaga.getDescricaoVaga(),
+                Vaga.getCursoVaga(),
+                Vaga.getTipoVagaEnum(),
+                Vaga.getNomeEmpresa(),
+                Vaga.getCidadeVaga(),
+                Vaga.getBolsaAuxilio(),
+                Vaga.getDataPublicacaoVaga(),
+                Vaga.getDataEncerramento(),
+                Vaga.getStatusvaga()
+        )).toList();
     }
 }
