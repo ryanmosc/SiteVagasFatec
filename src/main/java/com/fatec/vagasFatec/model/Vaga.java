@@ -1,5 +1,6 @@
 package com.fatec.vagasFatec.model;
 
+import com.fatec.vagasFatec.model.Enum.CursosEnum;
 import com.fatec.vagasFatec.model.Enum.StatusVaga;
 import com.fatec.vagasFatec.model.Enum.TipoVagaEnum;
 import jakarta.persistence.*;
@@ -34,9 +35,10 @@ public class Vaga {
     @Column(columnDefinition = "TEXT")
     private String descricaoVaga;
 
-    @NotBlank
+    @NotNull
+    @Enumerated(EnumType.STRING)
     @Column(name = "cursoVaga")
-    private String cursoVaga;
+    private CursosEnum cursoVaga;
 
     @NotNull
     @Column(name = "tipoVaga")

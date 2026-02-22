@@ -1,5 +1,6 @@
 package com.fatec.vagasFatec.Dto.VagaDto;
 
+import com.fatec.vagasFatec.model.Enum.CursosEnum;
 import com.fatec.vagasFatec.model.Enum.StatusVaga;
 import com.fatec.vagasFatec.model.Enum.TipoVagaEnum;
 
@@ -9,7 +10,7 @@ public record VagaUpdateDTO(
 
         String tituloVaga,
         String descricaoVaga,
-        String cursoVaga,
+        CursosEnum cursoVaga,
         TipoVagaEnum tipoVaga,
         String cidadeVaga,
         Double bolsaAuxilio,
