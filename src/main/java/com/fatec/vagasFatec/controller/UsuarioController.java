@@ -2,22 +2,26 @@ package com.fatec.vagasFatec.controller;
 
 import com.fatec.vagasFatec.Dto.UsuarioDto.UsuarioResponseDTO;
 import com.fatec.vagasFatec.model.Usuario;
-import com.fatec.vagasFatec.service.Usuarioservice;
-import jakarta.validation.Valid;
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
+import com.fatec.vagasFatec.service.UsuarioService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/usuarios")
 public class UsuarioController {
-    private final Usuarioservice usuarioservice;
+    private final UsuarioService usuarioservice;
 
     @PostMapping
-    public UsuarioResponseDTO CriarUsuario(@RequestBody @Valid Usuario usuario){
+    public UsuarioResponseDTO criarUsuario(@RequestBody Usuario usuario){
         return usuarioservice.criarUsuario(usuario);
+    }
+
+    @GetMapping
+    public List<UsuarioResponseDTO> listarUsuarios(){
+        return usuarioservice.listarUsuarios();
     }
 
     @GetMapping("/teste")

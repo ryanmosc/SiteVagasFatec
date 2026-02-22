@@ -1,5 +1,6 @@
 package com.fatec.vagasFatec.model;
 
+import com.fatec.vagasFatec.model.Enum.StatusVaga;
 import com.fatec.vagasFatec.model.Enum.TipoVagaEnum;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
@@ -32,18 +33,31 @@ public class Vaga {
 
     @NotBlank
     @Column(name = "cursoVaga")
-    private String cursovaga;
+    private String cursoVaga;
 
     @NotNull
     @Column(name = "tipoVaga")
     @Enumerated(EnumType.STRING)
     private TipoVagaEnum tipoVagaEnum;
 
+    @Column(name = "empresa_nome")
+    private String nomeEmpresa;
+
+    @Column(name = "cidade")
+    private String cidadeVaga;
+
+    @Column(name = "bolsa")
+    private Double bolsaAuxilio;
+
     @Column(name = "dataPublicacaoVaga")
-    private LocalDateTime dataPublicacaoVaga;
+    private LocalDateTime dataPublicacaoVaga = LocalDateTime.now();
+
+    @Column(name = "data_encerramento")
+    private LocalDateTime dataEncerramento;
 
     @Column(name = "statusVaga")
-    private Boolean statusvaga = Boolean.TRUE;
+    @Enumerated(EnumType.STRING)
+    private StatusVaga statusvaga = StatusVaga.ABERTA;
 
 
 }
