@@ -2,6 +2,7 @@ package com.fatec.vagasFatec.service;
 
 import com.fatec.vagasFatec.Dto.VagaDto.VagaUpdateDTO;
 import com.fatec.vagasFatec.Dto.VagaDto.VagasResponseDTO;
+import com.fatec.vagasFatec.model.Enum.CursosEnum;
 import com.fatec.vagasFatec.model.Enum.StatusVaga;
 import com.fatec.vagasFatec.model.Vaga;
 import com.fatec.vagasFatec.repository.Vagarepository;
@@ -99,7 +100,7 @@ public class VagasService {
 
     //Listar Todas as vagas
     public List<VagasResponseDTO> listarVagas(){
-        return vagarepository.findAll().stream().map(Vaga -> new VagasResponseDTO(
+        return vagarepository.findByStatusvaga(StatusVaga.ABERTA).stream().map(Vaga -> new VagasResponseDTO(
                 Vaga.getId(),
                 Vaga.getIdEmpresa(),
                 Vaga.getTituloVaga(),

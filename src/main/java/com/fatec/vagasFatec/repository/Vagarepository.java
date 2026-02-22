@@ -1,5 +1,6 @@
 package com.fatec.vagasFatec.repository;
 
+import com.fatec.vagasFatec.model.Enum.CursosEnum;
 import com.fatec.vagasFatec.model.Enum.StatusVaga;
 import com.fatec.vagasFatec.model.Vaga;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -12,4 +13,5 @@ import java.util.Optional;
 public interface Vagarepository extends JpaRepository <Vaga, Long>{
     List<Vaga> findByIdEmpresa (Long idEmpresa);
     List<Vaga> findByStatusvaga (StatusVaga statusVaga);
+
 }

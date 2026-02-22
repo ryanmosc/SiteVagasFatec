@@ -3,6 +3,8 @@ package com.fatec.vagasFatec.controller;
 
 import com.fatec.vagasFatec.Dto.VagaDto.VagaUpdateDTO;
 import com.fatec.vagasFatec.Dto.VagaDto.VagasResponseDTO;
+import com.fatec.vagasFatec.model.Enum.CursosEnum;
+import com.fatec.vagasFatec.model.Enum.StatusVaga;
 import com.fatec.vagasFatec.model.Vaga;
 import com.fatec.vagasFatec.service.VagasService;
 import lombok.RequiredArgsConstructor;
@@ -49,12 +51,15 @@ public class VagasController {
         return ResponseEntity.ok().build();
     }
 
+    //End point Publico para alunos, so vai retornar as vagas abertas
     @GetMapping
     public ResponseEntity<List<VagasResponseDTO>> listarTodasVagas(){
-        List<VagasResponseDTO> vagas= vagasService.listarVagas();
+
+        List<VagasResponseDTO> vagas = vagasService.listarVagas();
         return ResponseEntity.ok(vagas);
     }
 
+    //Endpoint somente para empresas e retorna as abertas e fechadas
     @GetMapping("/{id}/minhas")
     public ResponseEntity<List<VagasResponseDTO>> listarMinhasVagas(@PathVariable Long id){
         List<VagasResponseDTO> vagasResponseDTOS = vagasService.listarMinhasVagas(id);
