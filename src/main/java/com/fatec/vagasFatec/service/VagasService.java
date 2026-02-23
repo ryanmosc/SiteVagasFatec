@@ -29,7 +29,7 @@ public class VagasService {
                 vagaResponde.getCursoVaga(),
                 vagaResponde.getTipoVagaEnum(),
                 vagaResponde.getModalidadeVaga(),
-                vagaResponde.getEmpresa().getNome(),
+                vagaResponde.getEmpresa().getRazaoSocial(),
                 vagaResponde.getCidadeVaga(),
                 vagaResponde.getBolsaAuxilio(),
                 vagaResponde.getDataPublicacaoVaga(),

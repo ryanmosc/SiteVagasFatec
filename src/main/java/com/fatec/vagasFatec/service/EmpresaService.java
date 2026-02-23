@@ -18,9 +18,12 @@ public class EmpresaService {
     private EmpresaResponseDTO converter(Empresa empresa) {
         return new EmpresaResponseDTO(
                 empresa.getId(),
-                empresa.getNome(),
+                empresa.getRazaoSocial(),
+                empresa.getNomeFantasia(),
                 empresa.getEmail(),
-                empresa.getCnpj()
+                empresa.getCnpj(),
+                empresa.getTelefone(),
+                empresa.getStatusEmpresa()
 
         );
     }

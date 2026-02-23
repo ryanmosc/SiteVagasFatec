@@ -1,11 +1,15 @@
 package com.fatec.vagasFatec.Dto.EmpresaDTO;
 
 
+import com.fatec.vagasFatec.model.Enum.StatusEmpresa;
 
 public record EmpresaResponseDTO(
         Long id,
-        String nome,
+        String razaoSocial,
+        String nomeFantasia,
         String email,
-        String cnpj
+        String cnpj,
+        String telefone,
+        StatusEmpresa statusEmpresa
 
 ) {}
