@@ -11,7 +11,7 @@ import java.util.Optional;
 
 @Repository
 public interface Vagarepository extends JpaRepository <Vaga, Long>{
-    List<Vaga> findByIdEmpresa (Long idEmpresa);
+    List<Vaga> findByEmpresa_Id (Long idEmpresa);
     List<Vaga> findByStatusvaga (StatusVaga statusVaga);
     List<Vaga> findByStatusvagaAndCursoVaga(StatusVaga statusVaga, CursosEnum cursosEnum);
 }

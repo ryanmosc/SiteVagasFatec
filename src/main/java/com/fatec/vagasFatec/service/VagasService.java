@@ -23,12 +23,13 @@ public class VagasService {
     private VagasResponseDTO converteVagas (Vaga vagaResponde){
         return  new VagasResponseDTO(
                 vagaResponde.getId(),
-                vagaResponde.getIdEmpresa(),
+                vagaResponde.getEmpresa().getId(),
                 vagaResponde.getTituloVaga(),
                 vagaResponde.getDescricaoVaga(),
                 vagaResponde.getCursoVaga(),
                 vagaResponde.getTipoVagaEnum(),
-                vagaResponde.getNomeEmpresa(),
+                vagaResponde.getModalidadeVaga(),
+                vagaResponde.getEmpresa().getNome(),
                 vagaResponde.getCidadeVaga(),
                 vagaResponde.getBolsaAuxilio(),
                 vagaResponde.getDataPublicacaoVaga(),
@@ -108,20 +109,8 @@ public class VagasService {
         else {
             vagas = vagarepository.findByStatusvaga(StatusVaga.ABERTA);
         }
-        return vagas.stream().map(Vaga -> new VagasResponseDTO(
-                Vaga.getId(),
-                Vaga.getIdEmpresa(),
-                Vaga.getTituloVaga(),
-                Vaga.getDescricaoVaga(),
-                Vaga.getCursoVaga(),
-                Vaga.getTipoVagaEnum(),
-                Vaga.getNomeEmpresa(),
-                Vaga.getCidadeVaga(),
-                Vaga.getBolsaAuxilio(),
-                Vaga.getDataPublicacaoVaga(),
-                Vaga.getDataEncerramento(),
-                Vaga.getStatusvaga()
-        )).toList();
+        return vagas.stream().map(this::converteVagas
+        ).toList();
     }
 
 
@@ -131,19 +120,7 @@ public class VagasService {
     //Listar Minhas Vagas (Lista todas as vagas da empresa em questão, ate as fechadas)
 
     public List<VagasResponseDTO> listarMinhasVagas(Long idEmpresa){
-        return vagarepository.findByIdEmpresa(idEmpresa).stream().map(Vaga -> new VagasResponseDTO(
-                Vaga.getId(),
-                Vaga.getIdEmpresa(),
-                Vaga.getTituloVaga(),
-                Vaga.getDescricaoVaga(),
-                Vaga.getCursoVaga(),
-                Vaga.getTipoVagaEnum(),
-                Vaga.getNomeEmpresa(),
-                Vaga.getCidadeVaga(),
-                Vaga.getBolsaAuxilio(),
-                Vaga.getDataPublicacaoVaga(),
-                Vaga.getDataEncerramento(),
-                Vaga.getStatusvaga()
-        )).toList();
+        return vagarepository.findByEmpresa_Id(idEmpresa).stream().map(this::converteVagas
+        ).toList();
     }
 }

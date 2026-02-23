@@ -1,6 +1,7 @@
 package com.fatec.vagasFatec.model;
 
 import com.fatec.vagasFatec.model.Enum.CursosEnum;
+import com.fatec.vagasFatec.model.Enum.ModalidadeVagaEnum;
 import com.fatec.vagasFatec.model.Enum.StatusVaga;
 import com.fatec.vagasFatec.model.Enum.TipoVagaEnum;
 import jakarta.persistence.*;
@@ -24,8 +25,9 @@ public class Vaga {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private  Long id;
 
-    @Column(name = "id_empresa")
-    private Long idEmpresa;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "empresa_id", nullable = false)
+    private Empresa empresa;
 
     @NotBlank(message = "Erro: É obrgatorio um titulo para a vaga")
     @Column(name = "tituloVaga")
@@ -45,9 +47,12 @@ public class Vaga {
     @Enumerated(EnumType.STRING)
     private TipoVagaEnum tipoVagaEnum;
 
-    @Column(name = "empresa_nome")
-    private String nomeEmpresa;
+    @NotNull
+    @Column(name = "modalidade_vaga")
+    @Enumerated(EnumType.STRING)
+    private ModalidadeVagaEnum modalidadeVaga;
 
+    //Fron end manda uma requisição para https://servicodados.ibge.gov.br/api/v1/localidades/municipios
     @Column(name = "cidade")
     private String cidadeVaga;
 
