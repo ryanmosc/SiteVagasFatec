@@ -15,6 +15,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class VagasService {
     private final Vagarepository vagarepository;
+    private final EmpresaService empresaService;
 
 
 
@@ -43,6 +44,10 @@ public class VagasService {
 
     //Criar Vaga
     public VagasResponseDTO criarVaga (Vaga vaga){
+        boolean validarEmpresa = empresaService.validarStatusEmpresa(vaga.getEmpresa().getId());
+        if(validarEmpresa == Boolean.FALSE) {
+          throw  new RuntimeException("Status empresa é inativo");
+        }
         Vaga vagaResponde = vagarepository.save(vaga);
         return converteVagas(vagaResponde);
     }
@@ -50,6 +55,11 @@ public class VagasService {
     //EditarVaga
     public VagasResponseDTO editarVaga (VagaUpdateDTO dto, Long id_vaga){
         Vaga vaga = vagarepository.findById(id_vaga).orElseThrow(() -> new RuntimeException("Erro, vaga não encontrada"));
+
+        boolean validarEmpresa = empresaService.validarStatusEmpresa(vaga.getEmpresa().getId());
+        if(validarEmpresa == Boolean.FALSE) {
+            throw  new RuntimeException("Status empresa é inativo");
+        }
 
         if (dto.tituloVaga() != null) {
             vaga.setTituloVaga(dto.tituloVaga());
@@ -82,6 +92,10 @@ public class VagasService {
 
     public void encerrarVaga(Long idVaga){
         Vaga vaga = vagarepository.findById(idVaga).orElseThrow(() -> new RuntimeException("Vaga não encontrada"));
+        boolean validarEmpresa = empresaService.validarStatusEmpresa(vaga.getEmpresa().getId());
+        if(validarEmpresa == Boolean.FALSE) {
+            throw  new RuntimeException("Status empresa é inativo");
+        }
         vaga.setStatusvaga(StatusVaga.ENCERRADA);
         vagarepository.save(vaga);
     }
@@ -89,6 +103,10 @@ public class VagasService {
     //Reabrir Vaga
     public void reabrirVaga(Long idVaga){
         Vaga vaga = vagarepository.findById(idVaga).orElseThrow(() -> new RuntimeException("Vaga não encontrada"));
+        boolean validarEmpresa = empresaService.validarStatusEmpresa(vaga.getEmpresa().getId());
+        if(validarEmpresa == Boolean.FALSE) {
+            throw  new RuntimeException("Status empresa é inativo");
+        }
         vaga.setStatusvaga(StatusVaga.ABERTA);
         vagarepository.save(vaga);
     }
