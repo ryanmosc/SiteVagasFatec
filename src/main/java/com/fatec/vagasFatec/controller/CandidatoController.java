@@ -36,9 +36,21 @@ public class CandidatoController {
         return ResponseEntity.ok().body(candidatoResponseDTO);
     }
 
-    @PostMapping("/cadastro/{raAluno}/meus_dados")
+    @PatchMapping("/cadastro/{raAluno}/meus_dados")
     public ResponseEntity<CandidatoResponseDTO> atualizarDadosCandidato (@PathVariable String raAluno, @RequestBody CandidatoAtualizarPerfilDTo dto){
         CandidatoResponseDTO candidatoResponseDTO = candidatoService.atualizarDadosPerfil(dto, raAluno);
         return ResponseEntity.ok().body(candidatoResponseDTO);
+    }
+
+    @PatchMapping("/cadastro/{raAluno}/desativar")
+    public ResponseEntity<Void> desativarCandidato (@PathVariable String raAluno){
+        candidatoService.desativarCandidato(raAluno);
+        return ResponseEntity.ok().build();
+    }
+
+    @PatchMapping("/cadastro/{raAluno}/reativar")
+    public ResponseEntity<Void> reativarCandidato (@PathVariable String raAluno){
+        candidatoService.reativarCandidato(raAluno);
+        return ResponseEntity.ok().build();
     }
 }

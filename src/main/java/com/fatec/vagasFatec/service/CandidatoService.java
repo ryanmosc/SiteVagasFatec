@@ -112,9 +112,24 @@ public class CandidatoService {
 
 
 
+
+
     //Listar Todos os candidatos (Somente admins)
     public List<CandidatoResponseDTO> listarTodosCandidatos(){
         return candidatoRepository.findAll().stream().map((this::converterCandidatos)).toList();
     }
 
+    //Desativar Candidato (Somente adm)
+    public void desativarCandidato(String raAluno){
+        Candidato candidato = candidatoRepository.findByRaAluno(raAluno).orElseThrow(() -> new RuntimeException("Candidato não encontrado"));
+        candidato.setStatusCandidato(StatusCandidato.INATIVO);
+        candidatoRepository.save(candidato);
+    }
+
+    //Reativar / ativar Candidato (Somente adm)
+    public void reativarCandidato(String raAluno){
+        Candidato candidato = candidatoRepository.findByRaAluno(raAluno).orElseThrow(() -> new RuntimeException("Candidato não encontrado"));
+        candidato.setStatusCandidato(StatusCandidato.ATIVO);
+        candidatoRepository.save(candidato);
+    }
 }
