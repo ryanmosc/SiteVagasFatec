@@ -1,5 +1,6 @@
 package com.fatec.vagasFatec.controller;
 
+import com.fatec.vagasFatec.Dto.CandidatoDTO.CandidatoAtualizarPerfilDTo;
 import com.fatec.vagasFatec.Dto.CandidatoDTO.CandidatoCadastroDTO;
 import com.fatec.vagasFatec.Dto.CandidatoDTO.CandidatoResponseDTO;
 import com.fatec.vagasFatec.service.CandidatoService;
@@ -32,6 +33,12 @@ public class CandidatoController {
     @GetMapping("/cadastro/{raAluno}/meus_dados")
     public ResponseEntity<CandidatoResponseDTO> listarDadosAlunoPorRa(@PathVariable String raAluno){
         CandidatoResponseDTO candidatoResponseDTO = candidatoService.listarDadosAlunoPorRa(raAluno);
+        return ResponseEntity.ok().body(candidatoResponseDTO);
+    }
+
+    @PostMapping("/cadastro/{raAluno}/meus_dados")
+    public ResponseEntity<CandidatoResponseDTO> atualizarDadosCandidato (@PathVariable String raAluno, @RequestBody CandidatoAtualizarPerfilDTo dto){
+        CandidatoResponseDTO candidatoResponseDTO = candidatoService.atualizarDadosPerfil(dto, raAluno);
         return ResponseEntity.ok().body(candidatoResponseDTO);
     }
 }

@@ -1,5 +1,6 @@
 package com.fatec.vagasFatec.service;
 
+import com.fatec.vagasFatec.Dto.CandidatoDTO.CandidatoAtualizarPerfilDTo;
 import com.fatec.vagasFatec.Dto.CandidatoDTO.CandidatoCadastroDTO;
 import com.fatec.vagasFatec.Dto.CandidatoDTO.CandidatoResponseDTO;
 import com.fatec.vagasFatec.model.Candidato;
@@ -35,6 +36,16 @@ public class CandidatoService {
         );
     }
 
+    //Metodo Auxiliar para validar Status Candidato
+    public boolean validarStatusCandidato(String raAluno){
+        Candidato c = candidatoRepository.findByRaAluno(raAluno).orElseThrow(() -> new RuntimeException("Candidato não encontrado"));
+
+        if (c.getStatusCandidato() == StatusCandidato.ATIVO){
+            return Boolean.TRUE;
+        }
+        return Boolean.FALSE;
+    }
+
 
 
     //Criar Candidato
@@ -58,15 +69,52 @@ public class CandidatoService {
         return converterCandidatos(candidato);
     }
 
-    //Listar Todos os candidatos (Somente admins)
-    public List<CandidatoResponseDTO> listarTodosCandidatos(){
-        return candidatoRepository.findAll().stream().map((this::converterCandidatos)).toList();
+    //Atualizar dados faltantes
+    public CandidatoResponseDTO atualizarDadosPerfil (CandidatoAtualizarPerfilDTo dadosPerfil, String raAluno){
+
+        boolean validarCandidato = validarStatusCandidato(raAluno);
+        if(validarCandidato == Boolean.FALSE){
+            throw new RuntimeException("Candidato Inativo");
+        }
+
+        Candidato candidato = candidatoRepository.findByRaAluno(raAluno).orElseThrow(() -> new RuntimeException("Candidato nao encontrado"));
+
+        if(dadosPerfil.telefone() != null) {
+            candidato.setTelefone(dadosPerfil.telefone());
+        }
+        if(dadosPerfil.cidade() != null) {
+            candidato.setCidade(dadosPerfil.cidade());
+        }
+        if(dadosPerfil.linkedin() != null) {
+            candidato.setLinkLinkedin(dadosPerfil.linkedin());
+        }
+        if(dadosPerfil.github() != null) {
+            candidato.setLinkGithub(dadosPerfil.github());
+        }
+        if(dadosPerfil.bio() != null) {
+            candidato.setBioCandidato(dadosPerfil.bio());
+        }
+        if(dadosPerfil.dataNascimento() != null) {
+            candidato.setDataNascimento(dadosPerfil.dataNascimento());
+        }
+
+        candidatoRepository.save(candidato);
+        return converterCandidatos(candidato);
     }
+
+
 
     //Listar dados do aluno da sessão, por RA
     public CandidatoResponseDTO listarDadosAlunoPorRa (String raAluno){
         Candidato c = candidatoRepository.findByRaAluno(raAluno).orElseThrow(() -> new RuntimeException("Aluno não encontrado"));
         return converterCandidatos(c);
+    }
+
+
+
+    //Listar Todos os candidatos (Somente admins)
+    public List<CandidatoResponseDTO> listarTodosCandidatos(){
+        return candidatoRepository.findAll().stream().map((this::converterCandidatos)).toList();
     }
 
 }

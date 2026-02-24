@@ -52,4 +52,6 @@ public class EmpresaService {
                 .map(this::converter)
                 .toList();
     }
+
+    //Criar metodo de atualização de dados da empresa igual o do candidato
 }
