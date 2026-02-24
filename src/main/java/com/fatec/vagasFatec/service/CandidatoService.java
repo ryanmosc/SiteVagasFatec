@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -55,6 +56,17 @@ public class CandidatoService {
         candidatoRepository.save(candidato);
 
         return converterCandidatos(candidato);
+    }
+
+    //Listar Todos os candidatos (Somente admins)
+    public List<CandidatoResponseDTO> listarTodosCandidatos(){
+        return candidatoRepository.findAll().stream().map((this::converterCandidatos)).toList();
+    }
+
+    //Listar dados do aluno da sessão, por RA
+    public CandidatoResponseDTO listarDadosAlunoPorRa (String raAluno){
+        Candidato c = candidatoRepository.findByRaAluno(raAluno).orElseThrow(() -> new RuntimeException("Aluno não encontrado"));
+        return converterCandidatos(c);
     }
 
 }
