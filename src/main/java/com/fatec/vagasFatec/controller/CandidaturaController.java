@@ -27,4 +27,10 @@ public class CandidaturaController {
         List<CandidaturaResponseDTO> candidaturaResponseDTOS = candidaturaService.listarTodasCandidaturas();
         return ResponseEntity.ok().body(candidaturaResponseDTOS);
     }
+
+    @GetMapping("/{id_aluno}/minhas")
+    private ResponseEntity<List<CandidaturaResponseDTO>> listarVagasDoCandidato(@PathVariable Long id_aluno){
+        List<CandidaturaResponseDTO> lista = candidaturaService.listarTodasCandidaturasAluno(id_aluno);
+        return ResponseEntity.ok().body(lista);
+    }
 }
