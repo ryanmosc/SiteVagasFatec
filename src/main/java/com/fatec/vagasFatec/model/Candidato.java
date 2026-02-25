@@ -68,12 +68,7 @@ public class Candidato {
 
     @PrePersist
     public void prePersist(){
-        dataNascimento = null;
-        telefone = null;
-        cidade = null;
-        linkLinkedin = null;
-        linkGithub = null;
-        bioCandidato = null;
+
         statusCandidato = StatusCandidato.ATIVO;
         dataCadastro = LocalDateTime.now();
 

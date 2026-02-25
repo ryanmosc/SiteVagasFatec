@@ -51,17 +51,17 @@ public class CandidatoService {
     //Criar Candidato
     public  CandidatoResponseDTO criarCandidato(CandidatoCadastroDTO dto){
 
-        if(candidatoRepository.existsByEmailCandidato(dto.email())){
+        if(candidatoRepository.existsByEmailCandidato(dto.emailCandidato())){
             throw  new RuntimeException("E-mail já cadastrado");
         }
-        if(candidatoRepository.existsByRaAluno(dto.ra())){
+        if(candidatoRepository.existsByRaAluno(dto.raAluno())){
             throw new RuntimeException("RA já cadastrado");
         }
 
         Candidato candidato = new Candidato();
-                candidato.setNomeCompleto(dto.nome());
-                candidato.setRaAluno(dto.ra());
-                candidato.setEmailCandidato(dto.email());
+                candidato.setNomeCompleto(dto.nomeCompleto());
+                candidato.setRaAluno(dto.raAluno());
+                candidato.setEmailCandidato(dto.emailCandidato());
                 candidato.setSenha(dto.senha());
 
         candidatoRepository.save(candidato);
