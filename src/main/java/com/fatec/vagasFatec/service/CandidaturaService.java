@@ -91,4 +91,30 @@ public class CandidaturaService {
         candidaturaRepository.save(candidatura);
     }
 
+    //Empresa alterar Status candidatura (APROVADO / REJEITADO) (Somente empressas podem)
+    public void alterarStatusCandidatura (Long idCandidatura, Long idEmpresa, StatusCandidatura novoStatus){
+        Candidatura candidatura = candidaturaRepository.findById(idCandidatura).orElseThrow(() -> new RuntimeException("Candidatura não encontrada"));
+        Candidato candidato = candidatoRepository.findById(candidatura.getCandidato().getId()).orElseThrow(() -> new RuntimeException("Candidato não encontrado"));
+        if (candidato.getStatusCandidato() == StatusCandidato.INATIVO){
+            throw new RuntimeException("Candidato está inativo");
+        }
+        if (!candidatura.getVaga().getEmpresa().getId().equals(idEmpresa)){
+            throw new RuntimeException("Empresa não é dona da vaga");
+        }
+
+        if (candidatura.getStatus() == StatusCandidatura.APROVADO ||
+                candidatura.getStatus() == StatusCandidatura.REJEITADO) {
+            throw new RuntimeException("Processo já finalizado");
+        }
+
+        if(novoStatus != StatusCandidatura.APROVADO && novoStatus != StatusCandidatura.REJEITADO){
+            throw new RuntimeException("Status invalido");
+                                }
+
+        candidatura.setStatus(novoStatus);
+        candidaturaRepository.save(candidatura);
+
+
+    }
+
 }

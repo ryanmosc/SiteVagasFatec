@@ -8,12 +8,11 @@
 | 6 | Não pode desistir se já estiver DESISTIU        | Ao desistir     | ✅            | evitar estado inválido                   |
 | 7 | Só pode visualizar suas próprias candidaturas   | Ao listar       | ✅            | futura validação via autenticação        |
 
-| # | Regra                                           | Quando aplica   | Obrigatória? | Observação Técnica                       |
-| - | ----------------------------------------------- | --------------- | ------------ | ---------------------------------------- |
-| 1 | Candidato deve existir                          | Ao se inscrever | ✅            | Buscar por ID/RA                         |
-| 2 | Candidato deve estar ATIVO                      | Ao se inscrever | ✅            | status != INATIVO                        |
-| 3 | Não pode se candidatar duas vezes na mesma vaga | Ao se inscrever | ✅            | unique(candidato_id, vaga_id) + existsBy |
-| 4 | Não pode se candidatar em vaga INATIVA          | Ao se inscrever | ✅            | validar status da vaga                   |
-| 5 | Pode desistir apenas se estiver EM_ANALISE      | Ao desistir     | ✅            | bloquear se APROVADO/REJEITADO           |
-| 6 | Não pode desistir se já estiver DESISTIU        | Ao desistir     | ✅            | evitar estado inválido                   |
-| 7 | Só pode visualizar suas próprias candidaturas   | Ao listar       | ✅            | futura validação via autenticação        |
+-----------------------------------------------------------------------------------------------------------------------------------------------
+| #  | Regra                                             | Quando aplica       | Obrigatória? | Observação Técnica                      |
+| -- | ------------------------------------------------- | ------------------- | ------------ | --------------------------------------- |
+| 8  | Empresa deve ser dona da vaga                     | Ao alterar status   | ✅            | validar vaga.empresa_id                 |
+| 9  | Só pode alterar se candidatura estiver EM_ANALISE | Ao aprovar/rejeitar | ✅            | evitar reprocessamento                  |
+| 10 | Pode alterar apenas para APROVADO ou REJEITADO    | Ao atualizar status | ✅            | não permitir status arbitrário          |
+| 11 | Não pode alterar se candidato estiver INATIVO     | Ao processar        | 🔶           | opcional (regra de negócio mais rígida) |
+| 12 | Pode adicionar observação                         | Ao aprovar/rejeitar | 🔶           | campo opcional                          |
