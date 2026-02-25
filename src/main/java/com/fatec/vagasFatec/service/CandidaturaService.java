@@ -4,6 +4,7 @@ import com.fatec.vagasFatec.Dto.CandidaturaDTO.CandidaturaResponseDTO;
 import com.fatec.vagasFatec.model.Candidato;
 import com.fatec.vagasFatec.model.Candidatura;
 import com.fatec.vagasFatec.model.Enum.StatusCandidato;
+import com.fatec.vagasFatec.model.Enum.StatusCandidatura;
 import com.fatec.vagasFatec.model.Enum.StatusVaga;
 import com.fatec.vagasFatec.model.Vaga;
 import com.fatec.vagasFatec.repository.CandidatoRepository;
@@ -70,6 +71,24 @@ public class CandidaturaService {
     //Listar Todas as candidaturas de tod mundo (Somente adm para depuração)
     public List<CandidaturaResponseDTO> listarTodasCandidaturas(){
         return candidaturaRepository.findAll().stream().map(this::converterCandidatura).toList();
+    }
+
+    //Metodo para aluno desistir da candidatura
+    public void desistirCandidatura (Long id_aluno, Long id_vaga){
+        Candidatura candidatura = candidaturaRepository.findByCandidato_IdAndVaga_Id(id_aluno,id_vaga).orElseThrow(() -> new RuntimeException("Vaga não encontrada"));
+
+        if (candidatura.getVaga().getStatusvaga() == StatusVaga.ENCERRADA){
+            throw new RuntimeException("Vaga já encerrada");
+        }
+        if (candidatura.getStatus() == StatusCandidatura.REJEITADO || candidatura.getStatus() == StatusCandidatura.APROVADO) {
+            throw new RuntimeException("Processo seletivo já finalizado");
+        }
+        if (candidatura.getStatus() == StatusCandidatura.DESISTIU){
+            throw new RuntimeException("Voce ja desistiu desta vaga");
+        }
+
+        candidatura.setStatus(StatusCandidatura.DESISTIU);
+        candidaturaRepository.save(candidatura);
     }
 
 }

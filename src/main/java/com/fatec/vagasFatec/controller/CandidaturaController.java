@@ -33,4 +33,10 @@ public class CandidaturaController {
         List<CandidaturaResponseDTO> lista = candidaturaService.listarTodasCandidaturasAluno(id_aluno);
         return ResponseEntity.ok().body(lista);
     }
+
+    @PatchMapping("/desistir/{vagaId}/{alunoId}")
+    public ResponseEntity<Void> desistirVaga(@PathVariable Long vagaId, @PathVariable Long alunoId){
+        candidaturaService.desistirCandidatura(alunoId, vagaId);
+        return ResponseEntity.ok().build();
+    }
 }

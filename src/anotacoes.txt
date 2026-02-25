@@ -1,0 +1,19 @@
+| # | Regra                                           | Quando aplica   | Obrigatória? | Observação Técnica                       |
+| - | ----------------------------------------------- | --------------- | ------------ | ---------------------------------------- |
+| 1 | Candidato deve existir                          | Ao se inscrever | ✅            | Buscar por ID/RA                         |
+| 2 | Candidato deve estar ATIVO                      | Ao se inscrever | ✅            | status != INATIVO                        |
+| 3 | Não pode se candidatar duas vezes na mesma vaga | Ao se inscrever | ✅            | unique(candidato_id, vaga_id) + existsBy |
+| 4 | Não pode se candidatar em vaga INATIVA          | Ao se inscrever | ✅            | validar status da vaga                   |
+| 5 | Pode desistir apenas se estiver EM_ANALISE      | Ao desistir     | ✅            | bloquear se APROVADO/REJEITADO           |
+| 6 | Não pode desistir se já estiver DESISTIU        | Ao desistir     | ✅            | evitar estado inválido                   |
+| 7 | Só pode visualizar suas próprias candidaturas   | Ao listar       | ✅            | futura validação via autenticação        |
+
+| # | Regra                                           | Quando aplica   | Obrigatória? | Observação Técnica                       |
+| - | ----------------------------------------------- | --------------- | ------------ | ---------------------------------------- |
+| 1 | Candidato deve existir                          | Ao se inscrever | ✅            | Buscar por ID/RA                         |
+| 2 | Candidato deve estar ATIVO                      | Ao se inscrever | ✅            | status != INATIVO                        |
+| 3 | Não pode se candidatar duas vezes na mesma vaga | Ao se inscrever | ✅            | unique(candidato_id, vaga_id) + existsBy |
+| 4 | Não pode se candidatar em vaga INATIVA          | Ao se inscrever | ✅            | validar status da vaga                   |
+| 5 | Pode desistir apenas se estiver EM_ANALISE      | Ao desistir     | ✅            | bloquear se APROVADO/REJEITADO           |
+| 6 | Não pode desistir se já estiver DESISTIU        | Ao desistir     | ✅            | evitar estado inválido                   |
+| 7 | Só pode visualizar suas próprias candidaturas   | Ao listar       | ✅            | futura validação via autenticação        |
