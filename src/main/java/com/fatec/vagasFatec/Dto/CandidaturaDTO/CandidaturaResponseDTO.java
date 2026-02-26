@@ -11,5 +11,6 @@ public record CandidaturaResponseDTO(
         String tituloVaga,
         String empresaNome,
         StatusCandidatura status,
+        String observacaoEmpresa,
         LocalDateTime dataInscricao
 ) {}

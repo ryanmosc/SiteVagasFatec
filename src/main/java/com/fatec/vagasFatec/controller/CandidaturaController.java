@@ -1,5 +1,6 @@
 package com.fatec.vagasFatec.controller;
 
+import com.fatec.vagasFatec.Dto.CandidaturaDTO.CandidaturaObservacaoDTO;
 import com.fatec.vagasFatec.Dto.CandidaturaDTO.CandidaturaResponseDTO;
 import com.fatec.vagasFatec.model.Candidatura;
 import com.fatec.vagasFatec.model.Enum.StatusCandidatura;
@@ -45,5 +46,11 @@ public class CandidaturaController {
     public ResponseEntity<Void> alterarStatusCandidatura(@PathVariable Long id_empresa, @PathVariable Long id_candidatura, @RequestParam StatusCandidatura status){
         candidaturaService.alterarStatusCandidatura(id_candidatura, id_empresa, status);
         return ResponseEntity.ok().build();
+    }
+
+    @PatchMapping("/{id_empresa}/{id_candidatura}/observacoes")
+    public ResponseEntity<Void> adicionarObservacaoCandidatura(@PathVariable Long id_empresa, @PathVariable Long id_candidatura, @RequestBody CandidaturaObservacaoDTO observacaoDTO){
+        candidaturaService.adicionarComentariosCandidatura(id_empresa, id_candidatura, observacaoDTO);
+        return ResponseEntity.noContent().build();
     }
 }

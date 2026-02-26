@@ -1,14 +1,18 @@
 package com.fatec.vagasFatec.service;
 
+import com.fatec.vagasFatec.Dto.CandidaturaDTO.CandidaturaObservacaoDTO;
 import com.fatec.vagasFatec.Dto.CandidaturaDTO.CandidaturaResponseDTO;
 import com.fatec.vagasFatec.model.Candidato;
 import com.fatec.vagasFatec.model.Candidatura;
+import com.fatec.vagasFatec.model.Empresa;
 import com.fatec.vagasFatec.model.Enum.StatusCandidato;
 import com.fatec.vagasFatec.model.Enum.StatusCandidatura;
+import com.fatec.vagasFatec.model.Enum.StatusEmpresa;
 import com.fatec.vagasFatec.model.Enum.StatusVaga;
 import com.fatec.vagasFatec.model.Vaga;
 import com.fatec.vagasFatec.repository.CandidatoRepository;
 import com.fatec.vagasFatec.repository.CandidaturaRepository;
+import com.fatec.vagasFatec.repository.EmpresaRepository;
 import com.fatec.vagasFatec.repository.Vagarepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -21,6 +25,7 @@ public class CandidaturaService {
     private final CandidatoRepository candidatoRepository;
     private final Vagarepository vagarepository;
     private final CandidaturaRepository candidaturaRepository;
+    private final EmpresaRepository empresaRepository;
 
 
     //Metodo auxiliar para conversao
@@ -33,7 +38,9 @@ public class CandidaturaService {
                 candidatura.getVaga().getTituloVaga(),
                 candidatura.getVaga().getEmpresa().getRazaoSocial(),
                 candidatura.getStatus(),
+                candidatura.getObservacaoEmpresa(),
                 candidatura.getDataInscricao()
+
 
         );
     }
@@ -95,11 +102,17 @@ public class CandidaturaService {
     public void alterarStatusCandidatura (Long idCandidatura, Long idEmpresa, StatusCandidatura novoStatus){
         Candidatura candidatura = candidaturaRepository.findById(idCandidatura).orElseThrow(() -> new RuntimeException("Candidatura não encontrada"));
         Candidato candidato = candidatoRepository.findById(candidatura.getCandidato().getId()).orElseThrow(() -> new RuntimeException("Candidato não encontrado"));
+        Empresa empresa = empresaRepository.findById(idEmpresa).orElseThrow(() -> new RuntimeException("Empresa nao encontrada"));
+
         if (candidato.getStatusCandidato() == StatusCandidato.INATIVO){
             throw new RuntimeException("Candidato está inativo");
         }
         if (!candidatura.getVaga().getEmpresa().getId().equals(idEmpresa)){
             throw new RuntimeException("Empresa não é dona da vaga");
+        }
+
+        if (empresa.getStatusEmpresa() != StatusEmpresa.ATIVO){
+            throw new RuntimeException("Empresa está inativa");
         }
 
         if (candidatura.getStatus() == StatusCandidatura.APROVADO ||
@@ -113,6 +126,30 @@ public class CandidaturaService {
 
         candidatura.setStatus(novoStatus);
         candidaturaRepository.save(candidatura);
+
+
+    }
+
+
+    //Empresa adicionar comentarias a candidaturas
+    public void adicionarComentariosCandidatura(Long id_candidatura, Long id_empresa, CandidaturaObservacaoDTO observacaoDTO){
+        Candidatura candidatura = candidaturaRepository.findById(id_candidatura).orElseThrow(() -> new RuntimeException("Candidatura não encontrada"));
+        Empresa empresa = empresaRepository.findById(id_empresa).orElseThrow(() -> new RuntimeException("Empresa nao encontrada"));
+        Candidato candidato = candidatoRepository.findById(candidatura.getCandidato().getId()).orElseThrow(() -> new RuntimeException("Candidato não encontrado"));
+
+
+        if (!candidatura.getVaga().getEmpresa().getId().equals(id_empresa)){
+            throw new RuntimeException("Empresa não é dona da vaga");
+        }
+        if (empresa.getStatusEmpresa() != StatusEmpresa.ATIVO){
+            throw new RuntimeException("Empresa está inativa");
+        }
+        if (candidato.getStatusCandidato() == StatusCandidato.INATIVO){
+            throw new RuntimeException("Candidato está inativo");
+        }
+        candidatura.setObservacaoEmpresa(observacaoDTO.observacaoCandidatura());
+        candidaturaRepository.save(candidatura);
+
 
 
     }
