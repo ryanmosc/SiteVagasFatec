@@ -147,6 +147,13 @@ public class CandidaturaService {
         if (candidato.getStatusCandidato() == StatusCandidato.INATIVO){
             throw new RuntimeException("Candidato está inativo");
         }
+        if (candidatura.getStatus() == StatusCandidatura.APROVADO ||
+                candidatura.getStatus() == StatusCandidatura.REJEITADO) {
+            throw new RuntimeException("Processo já finalizado");
+        }
+        if (observacaoDTO.observacaoCandidatura().length() > 150){
+            throw new RuntimeException("mensagem muito grande máximo de 250 caracteres");
+        }
         candidatura.setObservacaoEmpresa(observacaoDTO.observacaoCandidatura());
         candidaturaRepository.save(candidatura);
 
