@@ -53,4 +53,14 @@ public class CandidaturaController {
         candidaturaService.adicionarComentariosCandidatura(id_empresa, id_candidatura, observacaoDTO);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/empresas/{idEmpresa}/vagas/{idVaga}/candidaturas")
+    public ResponseEntity<List<CandidaturaResponseDTO>> listarPorVaga(
+            @PathVariable Long idEmpresa,
+            @PathVariable Long idVaga
+    ) {
+        return ResponseEntity.ok(
+                candidaturaService.listarCandidaturasPorVaga(idVaga, idEmpresa)
+        );
+    }
 }

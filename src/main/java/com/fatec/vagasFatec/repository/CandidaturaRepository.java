@@ -12,4 +12,5 @@ public interface CandidaturaRepository extends JpaRepository<Candidatura, Long> 
     List<Candidatura> findByCandidatoId(Long candidatoId);
     boolean existsByCandidatoIdAndVagaId(Long candidatoId, Long vagaId);
     Optional<Candidatura> findByCandidato_IdAndVaga_Id(Long candidatoId, Long vagaId);
+    List<Candidatura> findByVaga_Id(Long idVaga);
 }

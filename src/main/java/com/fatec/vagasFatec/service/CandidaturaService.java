@@ -152,12 +152,26 @@ public class CandidaturaService {
             throw new RuntimeException("Processo já finalizado");
         }
         if (observacaoDTO.observacaoCandidatura().length() > 150){
-            throw new RuntimeException("mensagem muito grande máximo de 250 caracteres");
+            throw new RuntimeException("mensagem muito grande máximo de 150 caracteres");
         }
         candidatura.setObservacaoEmpresa(observacaoDTO.observacaoCandidatura());
         candidaturaRepository.save(candidatura);
 
 
+
+    }
+
+    //Listar candidaturas por vaga
+    public List<CandidaturaResponseDTO> listarCandidaturasPorVaga(Long id_vaga, Long id_empresa){
+        Vaga vaga = vagarepository.findById(id_vaga).orElseThrow(() -> new RuntimeException("Erro, vaga não encontrada"));
+        if (vaga.getEmpresa().getStatusEmpresa() != StatusEmpresa.ATIVO){
+            throw new RuntimeException("Empresa está inativa");
+        }
+        if (!vaga.getEmpresa().getId().equals(id_empresa)){
+            throw new RuntimeException("Empresa não é dona da vaga");
+        }
+
+        return candidaturaRepository.findByVaga_Id(id_vaga).stream().map(this::converterCandidatura).toList();
 
     }
 
