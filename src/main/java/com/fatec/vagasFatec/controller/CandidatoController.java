@@ -4,6 +4,7 @@ import com.fatec.vagasFatec.Dto.CandidatoDTO.CandidatoAtualizarPerfilDTo;
 import com.fatec.vagasFatec.Dto.CandidatoDTO.CandidatoCadastroDTO;
 import com.fatec.vagasFatec.Dto.CandidatoDTO.CandidatoResponseDTO;
 import com.fatec.vagasFatec.service.CandidatoService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,7 +20,7 @@ public class CandidatoController {
     private final CandidatoService candidatoService;
 
     @PostMapping("/cadastro")
-    public ResponseEntity<CandidatoResponseDTO> cadastroInicial (@RequestBody CandidatoCadastroDTO cadastroDTO){
+    public ResponseEntity<CandidatoResponseDTO> cadastroInicial (@RequestBody @Valid CandidatoCadastroDTO cadastroDTO){
         CandidatoResponseDTO candidatoResponseDTO = candidatoService.criarCandidato(cadastroDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(candidatoResponseDTO);
     }
@@ -31,25 +32,25 @@ public class CandidatoController {
     }
 
     @GetMapping("/cadastro/{raAluno}/meus_dados")
-    public ResponseEntity<CandidatoResponseDTO> listarDadosAlunoPorRa(@PathVariable String raAluno){
+    public ResponseEntity<CandidatoResponseDTO> listarDadosAlunoPorRa(@PathVariable @Valid String raAluno){
         CandidatoResponseDTO candidatoResponseDTO = candidatoService.listarDadosAlunoPorRa(raAluno);
         return ResponseEntity.ok().body(candidatoResponseDTO);
     }
 
     @PatchMapping("/cadastro/{raAluno}/meus_dados")
-    public ResponseEntity<CandidatoResponseDTO> atualizarDadosCandidato (@PathVariable String raAluno, @RequestBody CandidatoAtualizarPerfilDTo dto){
+    public ResponseEntity<CandidatoResponseDTO> atualizarDadosCandidato (@PathVariable @Valid String raAluno, @RequestBody@Valid CandidatoAtualizarPerfilDTo dto){
         CandidatoResponseDTO candidatoResponseDTO = candidatoService.atualizarDadosPerfil(dto, raAluno);
         return ResponseEntity.ok().body(candidatoResponseDTO);
     }
 
     @PatchMapping("/cadastro/{raAluno}/desativar")
-    public ResponseEntity<Void> desativarCandidato (@PathVariable String raAluno){
+    public ResponseEntity<Void> desativarCandidato (@PathVariable @Valid String raAluno){
         candidatoService.desativarCandidato(raAluno);
         return ResponseEntity.ok().build();
     }
 
     @PatchMapping("/cadastro/{raAluno}/reativar")
-    public ResponseEntity<Void> reativarCandidato (@PathVariable String raAluno){
+    public ResponseEntity<Void> reativarCandidato (@PathVariable@Valid String raAluno){
         candidatoService.reativarCandidato(raAluno);
         return ResponseEntity.ok().build();
     }
