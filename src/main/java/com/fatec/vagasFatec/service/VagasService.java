@@ -2,6 +2,8 @@ package com.fatec.vagasFatec.service;
 
 import com.fatec.vagasFatec.Dto.VagaDto.VagaUpdateDTO;
 import com.fatec.vagasFatec.Dto.VagaDto.VagasResponseDTO;
+import com.fatec.vagasFatec.exceptions.DadosNaoEncontrados;
+import com.fatec.vagasFatec.exceptions.RegraDeNegocioVioladaException;
 import com.fatec.vagasFatec.model.Enum.CursosEnum;
 import com.fatec.vagasFatec.model.Enum.StatusVaga;
 import com.fatec.vagasFatec.model.Vaga;
@@ -46,7 +48,7 @@ public class VagasService {
     public VagasResponseDTO criarVaga (Vaga vaga){
         boolean validarEmpresa = empresaService.validarStatusEmpresa(vaga.getEmpresa().getId());
         if(validarEmpresa == Boolean.FALSE) {
-          throw  new RuntimeException("Status empresa é inativo");
+          throw  new RegraDeNegocioVioladaException("Status empresa é inativo");
         }
         Vaga vagaResponde = vagarepository.save(vaga);
         return converteVagas(vagaResponde);
@@ -54,11 +56,11 @@ public class VagasService {
 
     //EditarVaga
     public VagasResponseDTO editarVaga (VagaUpdateDTO dto, Long id_vaga){
-        Vaga vaga = vagarepository.findById(id_vaga).orElseThrow(() -> new RuntimeException("Erro, vaga não encontrada"));
+        Vaga vaga = vagarepository.findById(id_vaga).orElseThrow(() -> new DadosNaoEncontrados("Erro, vaga não encontrada"));
 
         boolean validarEmpresa = empresaService.validarStatusEmpresa(vaga.getEmpresa().getId());
         if(validarEmpresa == Boolean.FALSE) {
-            throw  new RuntimeException("Status empresa é inativo");
+            throw  new RegraDeNegocioVioladaException("Status empresa é inativo");
         }
 
         if (dto.tituloVaga() != null) {
@@ -94,7 +96,7 @@ public class VagasService {
         Vaga vaga = vagarepository.findById(idVaga).orElseThrow(() -> new RuntimeException("Vaga não encontrada"));
         boolean validarEmpresa = empresaService.validarStatusEmpresa(vaga.getEmpresa().getId());
         if(validarEmpresa == Boolean.FALSE) {
-            throw  new RuntimeException("Status empresa é inativo");
+            throw  new RegraDeNegocioVioladaException("Status empresa é inativo");
         }
         vaga.setStatusvaga(StatusVaga.ENCERRADA);
         vagarepository.save(vaga);
@@ -102,10 +104,10 @@ public class VagasService {
 
     //Reabrir Vaga
     public void reabrirVaga(Long idVaga){
-        Vaga vaga = vagarepository.findById(idVaga).orElseThrow(() -> new RuntimeException("Vaga não encontrada"));
+        Vaga vaga = vagarepository.findById(idVaga).orElseThrow(() -> new DadosNaoEncontrados("Vaga não encontrada"));
         boolean validarEmpresa = empresaService.validarStatusEmpresa(vaga.getEmpresa().getId());
         if(validarEmpresa == Boolean.FALSE) {
-            throw  new RuntimeException("Status empresa é inativo");
+            throw  new RegraDeNegocioVioladaException("Status empresa é inativo");
         }
         vaga.setStatusvaga(StatusVaga.ABERTA);
         vagarepository.save(vaga);

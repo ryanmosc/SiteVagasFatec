@@ -3,6 +3,10 @@ package com.fatec.vagasFatec.service;
 import com.fatec.vagasFatec.Dto.CandidatoDTO.CandidatoAtualizarPerfilDTo;
 import com.fatec.vagasFatec.Dto.CandidatoDTO.CandidatoCadastroDTO;
 import com.fatec.vagasFatec.Dto.CandidatoDTO.CandidatoResponseDTO;
+import com.fatec.vagasFatec.exceptions.DadosInvalidosException;
+import com.fatec.vagasFatec.exceptions.DadosNaoEncontrados;
+import com.fatec.vagasFatec.exceptions.EntidadeJaExistenteException;
+import com.fatec.vagasFatec.exceptions.RegraDeNegocioVioladaException;
 import com.fatec.vagasFatec.model.Candidato;
 import com.fatec.vagasFatec.model.Enum.StatusCandidato;
 import com.fatec.vagasFatec.repository.CandidatoRepository;
@@ -20,7 +24,7 @@ public class CandidatoService {
 
 
     //Metodo Auxiliar para conversao de dados
-    public CandidatoResponseDTO converterCandidatos (Candidato candidato){
+    private CandidatoResponseDTO converterCandidatos (Candidato candidato){
         return  new CandidatoResponseDTO(
                  candidato.getId(),
                  candidato.getNomeCompleto(),
@@ -52,10 +56,10 @@ public class CandidatoService {
     public  CandidatoResponseDTO criarCandidato(CandidatoCadastroDTO dto){
 
         if(candidatoRepository.existsByEmailCandidato(dto.emailCandidato())){
-            throw  new RuntimeException("E-mail já cadastrado");
+            throw  new EntidadeJaExistenteException("E-mail já cadastrado");
         }
         if(candidatoRepository.existsByRaAluno(dto.raAluno())){
-            throw new RuntimeException("RA já cadastrado");
+            throw new EntidadeJaExistenteException("RA já cadastrado");
         }
 
         Candidato candidato = new Candidato();
@@ -74,10 +78,10 @@ public class CandidatoService {
 
         boolean validarCandidato = validarStatusCandidato(raAluno);
         if(validarCandidato == Boolean.FALSE){
-            throw new RuntimeException("Candidato Inativo");
+            throw new RegraDeNegocioVioladaException("Candidato Inativo");
         }
 
-        Candidato candidato = candidatoRepository.findByRaAluno(raAluno).orElseThrow(() -> new RuntimeException("Candidato nao encontrado"));
+        Candidato candidato = candidatoRepository.findByRaAluno(raAluno).orElseThrow(() -> new DadosNaoEncontrados("Candidato nao encontrado"));
 
         if(dadosPerfil.telefone() != null) {
             candidato.setTelefone(dadosPerfil.telefone());

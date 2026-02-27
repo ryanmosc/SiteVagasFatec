@@ -1,6 +1,7 @@
 package com.fatec.vagasFatec.service;
 
 import com.fatec.vagasFatec.Dto.EmpresaDTO.EmpresaResponseDTO;
+import com.fatec.vagasFatec.exceptions.DadosNaoEncontrados;
 import com.fatec.vagasFatec.model.Empresa;
 import com.fatec.vagasFatec.model.Enum.StatusEmpresa;
 import com.fatec.vagasFatec.repository.EmpresaRepository;
@@ -32,7 +33,7 @@ public class EmpresaService {
 
     // Metodo auxiliar para validar status
     public boolean validarStatusEmpresa(Long id_empresa){
-        Empresa e = empresaRepository.findById(id_empresa).orElseThrow(() -> new RuntimeException("Erro empresa não encontrada"));
+        Empresa e = empresaRepository.findById(id_empresa).orElseThrow(() -> new DadosNaoEncontrados("Erro empresa não encontrada"));
         if(e.getStatusEmpresa() != StatusEmpresa.ATIVO){
             return false;
         }
