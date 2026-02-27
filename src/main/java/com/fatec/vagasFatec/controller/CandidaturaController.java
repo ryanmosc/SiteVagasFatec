@@ -19,7 +19,7 @@ import java.util.List;
 public class CandidaturaController {
     private final CandidaturaService candidaturaService;
 
-    @PostMapping("/{id_aluno}/{id_vaga}")
+    @PostMapping("/aluno/{id_aluno}/vaga/{id_vaga}")
     public ResponseEntity<CandidaturaResponseDTO> criarCandidatura (@PathVariable @Valid Long id_aluno, @PathVariable @Valid Long id_vaga){
         CandidaturaResponseDTO dto = candidaturaService.criarCandidatura(id_aluno, id_vaga);
         return ResponseEntity.status(HttpStatus.CREATED).body(dto);
@@ -31,31 +31,31 @@ public class CandidaturaController {
         return ResponseEntity.ok().body(candidaturaResponseDTOS);
     }
 
-    @GetMapping("/{id_aluno}/minhas")
+    @GetMapping("/aluno/{id_aluno}")
     private ResponseEntity<List<CandidaturaResponseDTO>> listarVagasDoCandidato(@PathVariable @Valid Long id_aluno){
         List<CandidaturaResponseDTO> lista = candidaturaService.listarTodasCandidaturasAluno(id_aluno);
         return ResponseEntity.ok().body(lista);
     }
 
-    @PatchMapping("/desistir/{vagaId}/{alunoId}")
+    @PatchMapping("/vaga/{vagaId}/aluno/{alunoId}/desistir")
     public ResponseEntity<Void> desistirVaga(@PathVariable @Valid Long vagaId, @PathVariable @Valid Long alunoId){
         candidaturaService.desistirCandidatura(alunoId, vagaId);
         return ResponseEntity.ok().build();
     }
 
-    @PatchMapping("/alterar-status/{id_empresa}/{id_candidatura}/novo_status")
+    @PatchMapping("/empresa/{id_empresa}/candidatura/{id_candidatura}/novo_status")
     public ResponseEntity<Void> alterarStatusCandidatura(@PathVariable @Valid Long id_empresa, @PathVariable @Valid Long id_candidatura, @RequestParam @Valid StatusCandidatura status){
         candidaturaService.alterarStatusCandidatura(id_candidatura, id_empresa, status);
         return ResponseEntity.ok().build();
     }
 
-    @PatchMapping("/{id_empresa}/{id_candidatura}/observacoes")
+    @PatchMapping("empresa/{id_empresa}/candidatura/{id_candidatura}/observacoes")
     public ResponseEntity<Void> adicionarObservacaoCandidatura(@PathVariable @Valid Long id_empresa, @PathVariable @Valid Long id_candidatura, @RequestBody @Valid CandidaturaObservacaoDTO observacaoDTO){
         candidaturaService.adicionarComentariosCandidatura(id_empresa, id_candidatura, observacaoDTO);
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/empresas/{idEmpresa}/vagas/{idVaga}/candidaturas")
+    @GetMapping("/empresa/{idEmpresa}/vaga/{idVaga}/candidaturas_vaga")
     public ResponseEntity<List<CandidaturaResponseDTO>> listarPorVaga(
             @PathVariable @Valid Long idEmpresa,
             @PathVariable @Valid Long idVaga

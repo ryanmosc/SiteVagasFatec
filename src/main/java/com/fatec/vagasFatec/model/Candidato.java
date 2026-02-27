@@ -43,32 +43,25 @@ public class Candidato {
     @Column(name = "senha_candidato", nullable = false)
     private String senha;
 
-    @NotNull(message = "Erro: A data de nascimento é obrigatória")
     @PastOrPresent(message = "Erro: A data de nascimento não pode ser uma data futura")
     @Column(name = "data_nascimento")
     private LocalDate dataNascimento;
 
-    @NotBlank(message = "Erro: O telefone de contato é obrigatório")
     @Column(name = "telefone")
     private String telefone;
 
-    @NotBlank(message = "Erro: A cidade é obrigatória")
     @Column(name = "cidade")
     private String cidade;
 
-    @NotBlank(message = "Erro: Informe o link do seu LinkedIn")
     @Column(name = "link_linkedin", columnDefinition = "TEXT")
     private String linkLinkedin;
 
-    @NotBlank(message = "Erro: Informe o link do seu GitHub")
     @Column(name = "link_github", columnDefinition = "TEXT")
     private String linkGithub;
 
-    @NotBlank(message = "Erro: Escreva uma breve bio sobre você")
     @Column(name = "bio_candidato", columnDefinition = "TEXT")
     private String bioCandidato;
 
-    @NotNull(message = "Erro: O status do candidato é obrigatório")
     @Column(name = "status_candidato")
     @Enumerated(EnumType.STRING)
     private StatusCandidato statusCandidato;

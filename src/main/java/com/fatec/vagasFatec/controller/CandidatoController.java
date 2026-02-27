@@ -13,13 +13,13 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/candidato")
+@RequestMapping("/api/candidatos")
 @RequiredArgsConstructor
 public class CandidatoController {
 
     private final CandidatoService candidatoService;
 
-    @PostMapping("/cadastro")
+    @PostMapping
     public ResponseEntity<CandidatoResponseDTO> cadastroInicial (@RequestBody @Valid CandidatoCadastroDTO cadastroDTO){
         CandidatoResponseDTO candidatoResponseDTO = candidatoService.criarCandidato(cadastroDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(candidatoResponseDTO);
@@ -31,25 +31,25 @@ public class CandidatoController {
         return ResponseEntity.ok().body(responseEntities);
     }
 
-    @GetMapping("/cadastro/{raAluno}/meus_dados")
+    @GetMapping("/{ra}")
     public ResponseEntity<CandidatoResponseDTO> listarDadosAlunoPorRa(@PathVariable @Valid String raAluno){
         CandidatoResponseDTO candidatoResponseDTO = candidatoService.listarDadosAlunoPorRa(raAluno);
         return ResponseEntity.ok().body(candidatoResponseDTO);
     }
 
-    @PatchMapping("/cadastro/{raAluno}/meus_dados")
+    @PatchMapping("/{ra}")
     public ResponseEntity<CandidatoResponseDTO> atualizarDadosCandidato (@PathVariable @Valid String raAluno, @RequestBody@Valid CandidatoAtualizarPerfilDTo dto){
         CandidatoResponseDTO candidatoResponseDTO = candidatoService.atualizarDadosPerfil(dto, raAluno);
         return ResponseEntity.ok().body(candidatoResponseDTO);
     }
 
-    @PatchMapping("/cadastro/{raAluno}/desativar")
+    @PatchMapping("/{ra}/desativar")
     public ResponseEntity<Void> desativarCandidato (@PathVariable @Valid String raAluno){
         candidatoService.desativarCandidato(raAluno);
         return ResponseEntity.ok().build();
     }
 
-    @PatchMapping("/cadastro/{raAluno}/reativar")
+    @PatchMapping("/{ra}/reativar")
     public ResponseEntity<Void> reativarCandidato (@PathVariable@Valid String raAluno){
         candidatoService.reativarCandidato(raAluno);
         return ResponseEntity.ok().build();
