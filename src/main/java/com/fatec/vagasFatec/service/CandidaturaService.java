@@ -131,7 +131,7 @@ public class CandidaturaService {
     }
 
 
-    //Empresa adicionar comentarias a candidaturas
+    //Empresa adicionar comentarios a candidaturas
     public void adicionarComentariosCandidatura(Long id_candidatura, Long id_empresa, CandidaturaObservacaoDTO observacaoDTO){
         Candidatura candidatura = candidaturaRepository.findById(id_candidatura).orElseThrow(() -> new RuntimeException("Candidatura não encontrada"));
         Empresa empresa = empresaRepository.findById(id_empresa).orElseThrow(() -> new RuntimeException("Empresa nao encontrada"));
