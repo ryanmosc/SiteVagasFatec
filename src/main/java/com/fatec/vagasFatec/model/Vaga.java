@@ -7,6 +7,7 @@ import com.fatec.vagasFatec.model.Enum.TipoVagaEnum;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PositiveOrZero;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -21,41 +22,45 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "vagas")
 public class Vaga {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private  Long id;
+    private Long id;
 
+    @NotNull(message = "Erro: A empresa vinculada é obrigatória")
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "empresa_id", nullable = false)
     private Empresa empresa;
 
-    @NotBlank(message = "Erro: É obrgatorio um titulo para a vaga")
+    @NotBlank(message = "Erro: É obrigatório um título para a vaga")
     @Column(name = "tituloVaga")
     private String tituloVaga;
 
-    @NotBlank(message = "Erro: É obrgatorio uma descrição para a vaga")
+    @NotBlank(message = "Erro: É obrigatório uma descrição para a vaga")
     @Column(columnDefinition = "TEXT")
     private String descricaoVaga;
 
-    @NotNull
+    @NotNull(message = "Erro: O curso da vaga deve ser selecionado")
     @Enumerated(EnumType.STRING)
     @Column(name = "cursoVaga")
     private CursosEnum cursoVaga;
 
-    @NotNull
+    @NotNull(message = "Erro: O tipo da vaga (Estágio/CLT/etc) é obrigatório")
     @Column(name = "tipoVaga")
     @Enumerated(EnumType.STRING)
     private TipoVagaEnum tipoVagaEnum;
 
-    @NotNull
+    @NotNull(message = "Erro: A modalidade (Presencial/Remoto) é obrigatória")
     @Column(name = "modalidade_vaga")
     @Enumerated(EnumType.STRING)
     private ModalidadeVagaEnum modalidadeVaga;
 
-    //Fron end manda uma requisição para https://servicodados.ibge.gov.br/api/v1/localidades/municipios
+    @NotBlank(message = "Erro: A cidade da vaga é obrigatória")
     @Column(name = "cidade")
     private String cidadeVaga;
 
+    @NotNull(message = "Erro: O valor da bolsa auxílio deve ser informado")
+    @PositiveOrZero(message = "Erro: O valor da bolsa não pode ser negativo")
     @Column(name = "bolsa")
     private Double bolsaAuxilio;
 
@@ -65,10 +70,10 @@ public class Vaga {
     @Column(name = "data_encerramento")
     private LocalDateTime dataEncerramento;
 
+    @NotNull(message = "Erro: O status da vaga é obrigatório")
     @Column(name = "statusVaga")
     @Enumerated(EnumType.STRING)
     private StatusVaga statusvaga;
-
 
     @PrePersist
     public void prePersist(){

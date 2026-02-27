@@ -20,19 +20,21 @@ import java.util.List;
 @Table(name = "empresas")
 public class Empresa {
 
+    //Dados cadastrais das empresas que irão participar da paltaforma
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank
+    @NotBlank(message = "Erro: Razão social é obrigatorio")
     @Column(name = "razao_social")
     private String razaoSocial;
 
-    @NotBlank
+    @NotBlank(message = "Erro: Nome fantasia é orbigatorio")
     @Column(name = "nome_fantasia")
     private String nomeFantasia;
 
-    @NotBlank
+    @NotBlank(message = "Erro: E-mail é orbigatorio")
     @Email
     @Column(name = "email_empresa", unique = true)
     private String email;
@@ -41,10 +43,11 @@ public class Empresa {
     @CNPJ(message = "CNPJ INVALIDO")
     private String cnpj;
 
-    @NotNull
+    @NotBlank(message = "Erro: telefone é obrigatorio")
     @Column(name = "telefone")
     private String telefone;
 
+    @NotNull(message = "Erro: Status é obrigatorio")
     @Column(name = "status_empresa")
     @Enumerated(EnumType.STRING)
     private StatusEmpresa statusEmpresa;

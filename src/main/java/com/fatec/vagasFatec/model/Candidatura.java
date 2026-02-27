@@ -2,6 +2,7 @@ package com.fatec.vagasFatec.model;
 
 import com.fatec.vagasFatec.model.Enum.StatusCandidatura;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -22,16 +23,17 @@ public class Candidatura {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Muitos candidatos podem se candidatar para uma vaga
+    @NotNull(message = "Erro: O candidato é obrigatório para realizar a inscrição")
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "candidato_id", nullable = false)
     private Candidato candidato;
 
-    // Uma vaga pode ter várias candidaturas
+    @NotNull(message = "Erro: A vaga é obrigatória para realizar a inscrição")
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "vaga_id", nullable = false)
     private Vaga vaga;
 
+    @NotNull(message = "Erro: O status da candidatura deve ser informado")
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private StatusCandidatura status;
@@ -39,6 +41,7 @@ public class Candidatura {
     @Column(nullable = false)
     private LocalDateTime dataInscricao;
 
+    //Campo opcional, empres ausa se quiser
     @Column(columnDefinition = "TEXT")
     private String observacaoEmpresa;
 
