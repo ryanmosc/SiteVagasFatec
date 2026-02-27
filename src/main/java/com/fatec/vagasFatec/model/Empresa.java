@@ -38,7 +38,7 @@ public class Empresa {
     private String email;
 
     @Column(name = "cnpj", unique = true)
-    @CNPJ
+    @CNPJ(message = "CNPJ INVALIDO")
     private String cnpj;
 
     @NotNull

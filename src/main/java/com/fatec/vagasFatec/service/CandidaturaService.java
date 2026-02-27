@@ -2,6 +2,7 @@ package com.fatec.vagasFatec.service;
 
 import com.fatec.vagasFatec.Dto.CandidaturaDTO.CandidaturaObservacaoDTO;
 import com.fatec.vagasFatec.Dto.CandidaturaDTO.CandidaturaResponseDTO;
+import com.fatec.vagasFatec.exceptions.DadosInvalidosException;
 import com.fatec.vagasFatec.model.Candidato;
 import com.fatec.vagasFatec.model.Candidatura;
 import com.fatec.vagasFatec.model.Empresa;
@@ -139,7 +140,7 @@ public class CandidaturaService {
 
 
         if (!candidatura.getVaga().getEmpresa().getId().equals(id_empresa)){
-            throw new RuntimeException("Empresa não é dona da vaga");
+            throw new DadosInvalidosException("Empresa não é dona da vaga");
         }
         if (empresa.getStatusEmpresa() != StatusEmpresa.ATIVO){
             throw new RuntimeException("Empresa está inativa");

@@ -3,6 +3,7 @@ package com.fatec.vagasFatec.controller;
 import com.fatec.vagasFatec.Dto.EmpresaDTO.EmpresaResponseDTO;
 import com.fatec.vagasFatec.model.Empresa;
 import com.fatec.vagasFatec.service.EmpresaService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,7 +20,7 @@ public class EmpresaController {
 
     // Criar empresa
     @PostMapping
-    public ResponseEntity<EmpresaResponseDTO> criarEmpresa(@RequestBody Empresa empresa) {
+    public ResponseEntity<EmpresaResponseDTO> criarEmpresa(@RequestBody @Valid Empresa empresa) {
         EmpresaResponseDTO response = empresaService.criarEmpresa(empresa);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
