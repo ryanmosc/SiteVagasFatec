@@ -1,5 +1,6 @@
 package com.fatec.vagasFatec.model;
 
+import com.fatec.vagasFatec.model.Enum.Role;
 import com.fatec.vagasFatec.model.Enum.StatusCandidato;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
@@ -42,6 +43,10 @@ public class Candidato {
     @NotBlank(message = "Erro: A senha é obrigatória")
     @Column(name = "senha_candidato", nullable = false)
     private String senha;
+
+    @Column(name = "role")
+    @Enumerated(EnumType.STRING)
+    private Role role;
 
     @PastOrPresent(message = "Erro: A data de nascimento não pode ser uma data futura")
     @Column(name = "data_nascimento")

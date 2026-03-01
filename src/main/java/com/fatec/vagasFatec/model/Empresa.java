@@ -1,5 +1,6 @@
 package com.fatec.vagasFatec.model;
 
+import com.fatec.vagasFatec.model.Enum.Role;
 import com.fatec.vagasFatec.model.Enum.StatusEmpresa;
 import com.fatec.vagasFatec.model.Enum.StatusVaga;
 import jakarta.persistence.*;
@@ -42,6 +43,14 @@ public class Empresa {
     @Column(name = "cnpj", unique = true)
     @CNPJ(message = "CNPJ INVALIDO")
     private String cnpj;
+
+    @NotBlank(message = "Erro: A senha é obrigatória")
+    @Column(name = "senha_empresa", nullable = false)
+    private String senha;
+
+    @Column(name = "role")
+    @Enumerated(EnumType.STRING)
+    private Role role;
 
     @NotBlank(message = "Erro: telefone é obrigatorio")
     @Column(name = "telefone")
