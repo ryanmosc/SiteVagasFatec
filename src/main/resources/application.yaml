@@ -1,6 +1,6 @@
 spring:
     profiles:
-        active: dev # Altere para "dev" ao utilizar outro PC para acessar o banco H2, e para "test" ao usar o Docker Compose.
+        active: test # Altere para "dev" ao utilizar outro PC para acessar o banco H2, e para "test" ao usar o Docker Compose.
     application:
       name: vagasFatec
 
