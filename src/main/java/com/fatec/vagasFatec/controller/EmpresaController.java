@@ -26,7 +26,7 @@ public class EmpresaController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    // Listar todas
+    // Listar todas - Precisa da role de admin
     @GetMapping
     public ResponseEntity<List<EmpresaResponseDTO>> listarEmpresas() {
         return ResponseEntity.ok(empresaService.listarEmpresas());

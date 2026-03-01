@@ -1,18 +1,17 @@
 package com.fatec.vagasFatec.controller;
 
-
 import com.fatec.vagasFatec.Dto.VagaDto.VagaUpdateDTO;
 import com.fatec.vagasFatec.Dto.VagaDto.VagasResponseDTO;
+import com.fatec.vagasFatec.model.Empresa;
 import com.fatec.vagasFatec.model.Enum.CursosEnum;
-import com.fatec.vagasFatec.model.Enum.StatusVaga;
 import com.fatec.vagasFatec.model.Vaga;
 import com.fatec.vagasFatec.service.VagasService;
+import com.fatec.vagasFatec.utils.SecurityUtil;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 
 @RestController
@@ -28,45 +27,42 @@ public class VagasController {
         return ResponseEntity.status(HttpStatus.CREATED).body(vagasResponseDTO);
     }
 
+    // Atualizar vaga (deve validar ownership no service)
     @PatchMapping("/{id}")
-    public ResponseEntity<VagasResponseDTO> atualizarVaga(@RequestBody @Valid VagaUpdateDTO vaga, @PathVariable @Valid Long id){
-        VagasResponseDTO dto = vagasService.editarVaga(vaga, id);
-        return ResponseEntity.status(HttpStatus.OK).body(dto);
+    public ResponseEntity<VagasResponseDTO> atualizarVaga(@PathVariable Long id, @RequestBody @Valid VagaUpdateDTO dto) {
+        VagasResponseDTO response = vagasService.editarVaga(dto, id);
+        return ResponseEntity.ok(response);
     }
 
+    // Ações de gerenciamento: padronizar sem {id} na rota quando possível, mas aqui ok manter
     @PatchMapping("/{id}/encerrar")
-    public ResponseEntity<Void> encerrarVaga(@PathVariable @Valid Long id){
+    public ResponseEntity<Void> encerrarVaga(@PathVariable Long id) {
         vagasService.encerrarVaga(id);
         return ResponseEntity.ok().build();
     }
 
     @PatchMapping("/{id}/reabrir")
-    public ResponseEntity<Void> reabrirvaga(@PathVariable @Valid Long id){
+    public ResponseEntity<Void> reabrirVaga(@PathVariable Long id) {
         vagasService.reabrirVaga(id);
         return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletarVaga(@PathVariable @Valid Long id){
+    public ResponseEntity<Void> deletarVaga(@PathVariable Long id) {
         vagasService.deletarVaga(id);
         return ResponseEntity.ok().build();
     }
 
-    //End point Publico para alunos, so vai retornar as vagas abertas
+    // Público: vagas abertas
     @GetMapping
-    public ResponseEntity<List<VagasResponseDTO>> listarTodasVagas(@RequestParam (required = false) CursosEnum curso){
-
-        List<VagasResponseDTO> vagas = vagasService.listarVagas(curso);
-        return ResponseEntity.ok(vagas);
+    public ResponseEntity<List<VagasResponseDTO>> listarTodasVagas(@RequestParam(required = false) CursosEnum curso) {
+        return ResponseEntity.ok(vagasService.listarVagas(curso));
     }
 
-
-
-
-    //Endpoint somente para empresas e retorna as abertas e fechadas
-    @GetMapping("/{id}/minhas")
-    public ResponseEntity<List<VagasResponseDTO>> listarMinhasVagas(@PathVariable @Valid Long id){
-        List<VagasResponseDTO> vagasResponseDTOS = vagasService.listarMinhasVagas(id);
-        return ResponseEntity.ok(vagasResponseDTOS);
+    // Minhas vagas (empresa logada)
+    @GetMapping("/minhas")
+    public ResponseEntity<List<VagasResponseDTO>> listarMinhasVagas() {
+        Long idEmpresa = SecurityUtil.getCurrentUserId();
+        return ResponseEntity.ok(vagasService.listarMinhasVagas(idEmpresa));
     }
 }

@@ -5,6 +5,7 @@ import com.fatec.vagasFatec.Dto.CandidaturaDTO.CandidaturaResponseDTO;
 import com.fatec.vagasFatec.model.Candidatura;
 import com.fatec.vagasFatec.model.Enum.StatusCandidatura;
 import com.fatec.vagasFatec.service.CandidaturaService;
+import com.fatec.vagasFatec.utils.SecurityUtil;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -19,49 +20,57 @@ import java.util.List;
 public class CandidaturaController {
     private final CandidaturaService candidaturaService;
 
-    @PostMapping("/aluno/{id_aluno}/vaga/{id_vaga}")
-    public ResponseEntity<CandidaturaResponseDTO> criarCandidatura (@PathVariable @Valid Long id_aluno, @PathVariable @Valid Long id_vaga){
-        CandidaturaResponseDTO dto = candidaturaService.criarCandidatura(id_aluno, id_vaga);
+    @PostMapping("/vaga/{id_vaga}")
+    public ResponseEntity<CandidaturaResponseDTO> criarCandidatura (@PathVariable @Valid Long id_vaga){
+        Long candidatoLogado = SecurityUtil.getCurrentUserId();
+        CandidaturaResponseDTO dto = candidaturaService.criarCandidatura(candidatoLogado, id_vaga);
         return ResponseEntity.status(HttpStatus.CREATED).body(dto);
     }
 
+    //Precisa ter a rola de admin
     @GetMapping
     public ResponseEntity<List<CandidaturaResponseDTO>> listarTodasAsCandidaturas(){
         List<CandidaturaResponseDTO> candidaturaResponseDTOS = candidaturaService.listarTodasCandidaturas();
         return ResponseEntity.ok().body(candidaturaResponseDTOS);
     }
 
-    @GetMapping("/aluno/{id_aluno}")
-    private ResponseEntity<List<CandidaturaResponseDTO>> listarVagasDoCandidato(@PathVariable @Valid Long id_aluno){
-        List<CandidaturaResponseDTO> lista = candidaturaService.listarTodasCandidaturasAluno(id_aluno);
+    //Precisa ter  a role de candidato
+    @GetMapping("/vaga/minhas")
+    public ResponseEntity<List<CandidaturaResponseDTO>> listarVagasDoCandidato(){
+        Long candidatoLogado = SecurityUtil.getCurrentUserId();
+        List<CandidaturaResponseDTO> lista = candidaturaService.listarTodasCandidaturasAluno(candidatoLogado);
         return ResponseEntity.ok().body(lista);
     }
 
-    @PatchMapping("/vaga/{vagaId}/aluno/{alunoId}/desistir")
-    public ResponseEntity<Void> desistirVaga(@PathVariable @Valid Long vagaId, @PathVariable @Valid Long alunoId){
-        candidaturaService.desistirCandidatura(alunoId, vagaId);
+    @PatchMapping("/vaga/{vagaId}/desistir")
+    public ResponseEntity<Void> desistirVaga(@PathVariable @Valid Long vagaId){
+        Long candidatoLogado = SecurityUtil.getCurrentUserId();
+        candidaturaService.desistirCandidatura(candidatoLogado, vagaId);
         return ResponseEntity.ok().build();
     }
 
-    @PatchMapping("/empresa/{id_empresa}/candidatura/{id_candidatura}/novo_status")
-    public ResponseEntity<Void> alterarStatusCandidatura(@PathVariable @Valid Long id_empresa, @PathVariable @Valid Long id_candidatura, @RequestParam @Valid StatusCandidatura status){
-        candidaturaService.alterarStatusCandidatura(id_candidatura, id_empresa, status);
+    //Precisa ter a role de empresa
+    @PatchMapping("/empresa/candidatura/{id_candidatura}/novo_status")
+    public ResponseEntity<Void> alterarStatusCandidatura(@PathVariable @Valid Long id_candidatura, @RequestParam @Valid StatusCandidatura status){
+        Long empresaLogada = SecurityUtil.getCurrentUserId();
+        candidaturaService.alterarStatusCandidatura(id_candidatura, empresaLogada, status);
         return ResponseEntity.ok().build();
     }
 
-    @PatchMapping("empresa/{id_empresa}/candidatura/{id_candidatura}/observacoes")
-    public ResponseEntity<Void> adicionarObservacaoCandidatura(@PathVariable @Valid Long id_empresa, @PathVariable @Valid Long id_candidatura, @RequestBody @Valid CandidaturaObservacaoDTO observacaoDTO){
-        candidaturaService.adicionarComentariosCandidatura(id_empresa, id_candidatura, observacaoDTO);
+    @PatchMapping("empresa/candidatura/{id_candidatura}/observacoes")
+    public ResponseEntity<Void> adicionarObservacaoCandidatura(@PathVariable @Valid Long id_candidatura, @RequestBody @Valid CandidaturaObservacaoDTO observacaoDTO){
+        Long candidatoLogado = SecurityUtil.getCurrentUserId();
+        candidaturaService.adicionarComentariosCandidatura(candidatoLogado, id_candidatura, observacaoDTO);
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/empresa/{idEmpresa}/vaga/{idVaga}/candidaturas_vaga")
+    @GetMapping("/empresa/vaga/{idVaga}/candidaturas_vaga")
     public ResponseEntity<List<CandidaturaResponseDTO>> listarPorVaga(
-            @PathVariable @Valid Long idEmpresa,
             @PathVariable @Valid Long idVaga
     ) {
+        Long candidatoLogado = SecurityUtil.getCurrentUserId();
         return ResponseEntity.ok(
-                candidaturaService.listarCandidaturasPorVaga(idVaga, idEmpresa)
+                candidaturaService.listarCandidaturasPorVaga(idVaga, candidatoLogado)
         );
     }
 }

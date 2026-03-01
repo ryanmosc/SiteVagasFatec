@@ -4,13 +4,17 @@ import com.fatec.vagasFatec.Dto.VagaDto.VagaUpdateDTO;
 import com.fatec.vagasFatec.Dto.VagaDto.VagasResponseDTO;
 import com.fatec.vagasFatec.exceptions.DadosNaoEncontrados;
 import com.fatec.vagasFatec.exceptions.RegraDeNegocioVioladaException;
+import com.fatec.vagasFatec.model.Empresa;
 import com.fatec.vagasFatec.model.Enum.CursosEnum;
 import com.fatec.vagasFatec.model.Enum.StatusVaga;
 import com.fatec.vagasFatec.model.Vaga;
+import com.fatec.vagasFatec.repository.EmpresaRepository;
 import com.fatec.vagasFatec.repository.Vagarepository;
+import com.fatec.vagasFatec.utils.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -18,6 +22,7 @@ import java.util.List;
 public class VagasService {
     private final Vagarepository vagarepository;
     private final EmpresaService empresaService;
+    private final EmpresaRepository empresaRepository;
 
 
 
@@ -42,23 +47,37 @@ public class VagasService {
         );
     }
 
+    public VagasResponseDTO criarVaga(Vaga vaga) {
+        Long idEmpresaLogada = SecurityUtil.getCurrentUserId();
 
+        // 1. Busca a empresa pelo ID logado ANTES de qualquer acesso a vaga.empresa
+        Empresa empresaLogada = empresaRepository.findById(idEmpresaLogada)
+                .orElseThrow(() -> new DadosNaoEncontrados("Empresa não encontrada para o usuário logado"));
 
-    //Criar Vaga
-    public VagasResponseDTO criarVaga (Vaga vaga){
-        boolean validarEmpresa = empresaService.validarStatusEmpresa(vaga.getEmpresa().getId());
-        if(validarEmpresa == Boolean.FALSE) {
-          throw  new RegraDeNegocioVioladaException("Status empresa é inativo");
+        // 2. Valida status da empresa logada (não da que veio no body, que é null)
+        if (!empresaService.validarStatusEmpresa(idEmpresaLogada)) {
+            throw new RegraDeNegocioVioladaException("Empresa está inativa");
         }
-        Vaga vagaResponde = vagarepository.save(vaga);
-        return converteVagas(vagaResponde);
+
+        // 3. Ignora qualquer empresa que venha no body e seta a correta
+        vaga.setEmpresa(empresaLogada);
+
+        // 4. Salva
+        Vaga salva = vagarepository.save(vaga);
+
+        return converteVagas(salva);
     }
+
 
     //EditarVaga
     public VagasResponseDTO editarVaga (VagaUpdateDTO dto, Long id_vaga){
         Vaga vaga = vagarepository.findById(id_vaga).orElseThrow(() -> new DadosNaoEncontrados("Erro, vaga não encontrada"));
 
-        boolean validarEmpresa = empresaService.validarStatusEmpresa(vaga.getEmpresa().getId());
+        Long idEmpresaLogada = SecurityUtil.getCurrentUserId();
+        if (!vaga.getEmpresa().getId().equals(idEmpresaLogada)) {
+            throw new RegraDeNegocioVioladaException("Você não é dono dessa vaga");
+        }
+        boolean validarEmpresa = empresaService.validarStatusEmpresa(idEmpresaLogada);
         if(validarEmpresa == Boolean.FALSE) {
             throw  new RegraDeNegocioVioladaException("Status empresa é inativo");
         }
@@ -87,17 +106,22 @@ public class VagasService {
         }
 
         vagarepository.save(vaga);
-       return  converteVagas(vaga);
+        return  converteVagas(vaga);
     }
 
-    //Encerrar vaga
+    // Encerrar
+    public void encerrarVaga(Long idVaga) {
+        Vaga vaga = vagarepository.findById(idVaga)
+                .orElseThrow(() -> new DadosNaoEncontrados("Vaga não encontrada"));
 
-    public void encerrarVaga(Long idVaga){
-        Vaga vaga = vagarepository.findById(idVaga).orElseThrow(() -> new RuntimeException("Vaga não encontrada"));
-        boolean validarEmpresa = empresaService.validarStatusEmpresa(vaga.getEmpresa().getId());
-        if(validarEmpresa == Boolean.FALSE) {
-            throw  new RegraDeNegocioVioladaException("Status empresa é inativo");
+        Long idEmpresaLogada = SecurityUtil.getCurrentUserId();
+        if (!vaga.getEmpresa().getId().equals(idEmpresaLogada)) {
+            throw new RegraDeNegocioVioladaException("Você não é dono dessa vaga");
         }
+        if (!empresaService.validarStatusEmpresa(idEmpresaLogada)) {
+            throw new RegraDeNegocioVioladaException("Empresa inativa");
+        }
+
         vaga.setStatusvaga(StatusVaga.ENCERRADA);
         vagarepository.save(vaga);
     }
@@ -109,6 +133,9 @@ public class VagasService {
         if(validarEmpresa == Boolean.FALSE) {
             throw  new RegraDeNegocioVioladaException("Status empresa é inativo");
         }
+        if (vaga.getEmpresa().getId() != SecurityUtil.getCurrentUserId()){
+            throw new RegraDeNegocioVioladaException("Empresa não é dona da vaga");
+        }
         vaga.setStatusvaga(StatusVaga.ABERTA);
         vagarepository.save(vaga);
     }
@@ -116,6 +143,10 @@ public class VagasService {
     //Deletar Vaga
 
     public void deletarVaga(Long id){
+        Vaga vaga = vagarepository.findById(id).orElseThrow(() -> new DadosNaoEncontrados("Vaga não encontrada"));
+        if (vaga.getEmpresa().getId() != SecurityUtil.getCurrentUserId()){
+            throw new RegraDeNegocioVioladaException("Empresa não é dona da vaga");
+        }
         vagarepository.deleteById(id);
     }
 

@@ -45,8 +45,8 @@ public class CandidatoService {
     }
 
     //Metodo Auxiliar para validar Status Candidato
-    public boolean validarStatusCandidato(String raAluno){
-        Candidato c = candidatoRepository.findByRaAluno(raAluno).orElseThrow(() -> new RuntimeException("Candidato não encontrado"));
+    public boolean validarStatusCandidato(Long candidatoLogado){
+        Candidato c = candidatoRepository.findById(candidatoLogado).orElseThrow(() -> new RuntimeException("Candidato não encontrado"));
 
         if (c.getStatusCandidato() == StatusCandidato.ATIVO){
             return Boolean.TRUE;
@@ -79,14 +79,14 @@ public class CandidatoService {
     }
 
     //Atualizar dados faltantes
-    public CandidatoResponseDTO atualizarDadosPerfil (CandidatoAtualizarPerfilDTo dadosPerfil, String raAluno){
+    public CandidatoResponseDTO atualizarDadosPerfil (CandidatoAtualizarPerfilDTo dadosPerfil, Long candidatoLogado){
 
-        boolean validarCandidato = validarStatusCandidato(raAluno);
+        boolean validarCandidato = validarStatusCandidato(candidatoLogado);
         if(validarCandidato == Boolean.FALSE){
             throw new RegraDeNegocioVioladaException("Candidato Inativo");
         }
 
-        Candidato candidato = candidatoRepository.findByRaAluno(raAluno).orElseThrow(() -> new DadosNaoEncontrados("Candidato nao encontrado"));
+        Candidato candidato = candidatoRepository.findById(candidatoLogado).orElseThrow(() -> new DadosNaoEncontrados("Candidato nao encontrado"));
 
         if(dadosPerfil.telefone() != null) {
             candidato.setTelefone(dadosPerfil.telefone());
@@ -114,8 +114,8 @@ public class CandidatoService {
 
 
     //Listar dados do aluno da sessão, por RA
-    public CandidatoResponseDTO listarDadosAlunoPorRa (String raAluno){
-        Candidato c = candidatoRepository.findByRaAluno(raAluno).orElseThrow(() -> new RuntimeException("Aluno não encontrado"));
+    public CandidatoResponseDTO listarDadosAlunoPorRa (Long id){
+        Candidato c = candidatoRepository.findById(id).orElseThrow(() -> new RuntimeException("Aluno não encontrado"));
         return converterCandidatos(c);
     }
 

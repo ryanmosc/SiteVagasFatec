@@ -4,6 +4,7 @@ import com.fatec.vagasFatec.Dto.CandidatoDTO.CandidatoAtualizarPerfilDTo;
 import com.fatec.vagasFatec.Dto.CandidatoDTO.CandidatoCadastroDTO;
 import com.fatec.vagasFatec.Dto.CandidatoDTO.CandidatoResponseDTO;
 import com.fatec.vagasFatec.service.CandidatoService;
+import com.fatec.vagasFatec.utils.SecurityUtil;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -36,23 +37,25 @@ public class CandidatoController {
     //Precisa ter role ROLE_CANDIDATO e o id ser o certo
     @GetMapping("/perfil")
     public ResponseEntity<CandidatoResponseDTO> listarDadosAlunoPorRa(){
-        CandidatoResponseDTO candidatoResponseDTO = candidatoService.listarDadosAlunoPorRa(id);
+        Long candidatoLogado = SecurityUtil.getCurrentUserId();
+        CandidatoResponseDTO candidatoResponseDTO = candidatoService.listarDadosAlunoPorRa(candidatoLogado);
         return ResponseEntity.ok().body(candidatoResponseDTO);
     }
 
-    @PatchMapping("/{ra}")
-    public ResponseEntity<CandidatoResponseDTO> atualizarDadosCandidato (@PathVariable @Valid String raAluno, @RequestBody@Valid CandidatoAtualizarPerfilDTo dto){
-        CandidatoResponseDTO candidatoResponseDTO = candidatoService.atualizarDadosPerfil(dto, raAluno);
+    @PatchMapping("/perfil")
+    public ResponseEntity<CandidatoResponseDTO> atualizarDadosCandidato (@RequestBody@Valid CandidatoAtualizarPerfilDTo dto){
+        Long candidatoLogado = SecurityUtil.getCurrentUserId();
+        CandidatoResponseDTO candidatoResponseDTO = candidatoService.atualizarDadosPerfil(dto, candidatoLogado);
         return ResponseEntity.ok().body(candidatoResponseDTO);
     }
 
-    @PatchMapping("/{ra}/desativar")
+    @PatchMapping("/admin/{ra}/desativar")
     public ResponseEntity<Void> desativarCandidato (@PathVariable @Valid String raAluno){
         candidatoService.desativarCandidato(raAluno);
         return ResponseEntity.ok().build();
     }
 
-    @PatchMapping("/{ra}/reativar")
+    @PatchMapping("/admin/{ra}/reativar")
     public ResponseEntity<Void> reativarCandidato (@PathVariable@Valid String raAluno){
         candidatoService.reativarCandidato(raAluno);
         return ResponseEntity.ok().build();

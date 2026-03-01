@@ -27,7 +27,6 @@ public class Vaga {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotNull(message = "Erro: A empresa vinculada é obrigatória")
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "empresa_id", nullable = false)
     private Empresa empresa;
@@ -70,7 +69,7 @@ public class Vaga {
     @Column(name = "data_encerramento")
     private LocalDateTime dataEncerramento;
 
-    @NotNull(message = "Erro: O status da vaga é obrigatório")
+
     @Column(name = "statusVaga")
     @Enumerated(EnumType.STRING)
     private StatusVaga statusvaga;
