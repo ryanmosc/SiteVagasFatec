@@ -19,21 +19,24 @@ public class CandidatoController {
 
     private final CandidatoService candidatoService;
 
+    //Não precisa de role
     @PostMapping
     public ResponseEntity<CandidatoResponseDTO> cadastroInicial (@RequestBody @Valid CandidatoCadastroDTO cadastroDTO){
         CandidatoResponseDTO candidatoResponseDTO = candidatoService.criarCandidato(cadastroDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(candidatoResponseDTO);
     }
 
+    //Precisa de role admin
     @GetMapping
     public ResponseEntity<List<CandidatoResponseDTO>> listarTodoscandidatos (){
         List<CandidatoResponseDTO> responseEntities = candidatoService.listarTodosCandidatos();
         return ResponseEntity.ok().body(responseEntities);
     }
 
-    @GetMapping("/{ra}")
-    public ResponseEntity<CandidatoResponseDTO> listarDadosAlunoPorRa(@PathVariable @Valid String raAluno){
-        CandidatoResponseDTO candidatoResponseDTO = candidatoService.listarDadosAlunoPorRa(raAluno);
+    //Precisa ter role ROLE_CANDIDATO e o id ser o certo
+    @GetMapping("/perfil")
+    public ResponseEntity<CandidatoResponseDTO> listarDadosAlunoPorRa(){
+        CandidatoResponseDTO candidatoResponseDTO = candidatoService.listarDadosAlunoPorRa(id);
         return ResponseEntity.ok().body(candidatoResponseDTO);
     }
 

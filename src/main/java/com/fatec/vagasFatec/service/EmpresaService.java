@@ -1,11 +1,14 @@
 package com.fatec.vagasFatec.service;
 
+import com.fatec.vagasFatec.Dto.EmpresaDTO.EmpreRequestDTO;
 import com.fatec.vagasFatec.Dto.EmpresaDTO.EmpresaResponseDTO;
 import com.fatec.vagasFatec.exceptions.DadosNaoEncontrados;
 import com.fatec.vagasFatec.model.Empresa;
+import com.fatec.vagasFatec.model.Enum.Role;
 import com.fatec.vagasFatec.model.Enum.StatusEmpresa;
 import com.fatec.vagasFatec.repository.EmpresaRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -15,6 +18,7 @@ import java.util.List;
 public class EmpresaService {
 
     private final EmpresaRepository empresaRepository;
+    private final PasswordEncoder passwordEncoder;
 
     // Metodo auxiliar de conversão
     private EmpresaResponseDTO converter(Empresa empresa) {
@@ -41,8 +45,16 @@ public class EmpresaService {
     }
 
     // Criar empresa
-    public EmpresaResponseDTO criarEmpresa(Empresa empresa) {
-        Empresa salva = empresaRepository.save(empresa);
+    public EmpresaResponseDTO criarEmpresa(EmpreRequestDTO dto) {
+        Empresa salva = new Empresa();
+        salva.setRazaoSocial(dto.razaoSocial());
+        salva.setNomeFantasia(dto.nomeFantasia());
+        salva.setEmail(dto.email());
+        salva.setCnpj(dto.cnpj());
+        salva.setTelefone(dto.telefone());
+        salva.setSenha(passwordEncoder.encode(dto.senha()));
+        salva.setRole(Role.ROLE_EMPRESA);
+        empresaRepository.save(salva);
         return converter(salva);
     }
 

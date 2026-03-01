@@ -78,5 +78,6 @@ public class Candidato {
     public void prePersist(){
         statusCandidato = StatusCandidato.ATIVO;
         dataCadastro = LocalDateTime.now();
+        role = Role.ROLE_CANDIDATO;
     }
 }

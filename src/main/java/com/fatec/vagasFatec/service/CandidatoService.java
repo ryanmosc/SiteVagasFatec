@@ -8,9 +8,11 @@ import com.fatec.vagasFatec.exceptions.DadosNaoEncontrados;
 import com.fatec.vagasFatec.exceptions.EntidadeJaExistenteException;
 import com.fatec.vagasFatec.exceptions.RegraDeNegocioVioladaException;
 import com.fatec.vagasFatec.model.Candidato;
+import com.fatec.vagasFatec.model.Enum.Role;
 import com.fatec.vagasFatec.model.Enum.StatusCandidato;
 import com.fatec.vagasFatec.repository.CandidatoRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -21,6 +23,8 @@ import java.util.List;
 public class CandidatoService {
 
     private final CandidatoRepository candidatoRepository;
+
+    private final PasswordEncoder passwordEncoder;
 
 
     //Metodo Auxiliar para conversao de dados
@@ -66,7 +70,8 @@ public class CandidatoService {
                 candidato.setNomeCompleto(dto.nomeCompleto());
                 candidato.setRaAluno(dto.raAluno());
                 candidato.setEmailCandidato(dto.emailCandidato());
-                candidato.setSenha(dto.senha());
+                candidato.setSenha(passwordEncoder.encode(dto.senha()));
+                candidato.setRole(Role.ROLE_CANDIDATO);
 
         candidatoRepository.save(candidato);
 

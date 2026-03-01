@@ -68,5 +68,6 @@ public class Empresa {
     @PrePersist
     public void prePersist(){
        statusEmpresa = StatusEmpresa.ATIVO;
+       role =Role.ROLE_EMPRESA;
     }
 }
