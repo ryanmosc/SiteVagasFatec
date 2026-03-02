@@ -1,8 +1,10 @@
 package com.fatec.vagasFatec.auth.controller;
 
 import com.fatec.vagasFatec.auth.service.JwtService;
+import com.fatec.vagasFatec.exceptions.RegraDeNegocioVioladaException;
 import com.fatec.vagasFatec.model.Candidato;
 import com.fatec.vagasFatec.model.Empresa;
+import com.fatec.vagasFatec.model.Enum.StatusCandidato;
 import com.fatec.vagasFatec.repository.CandidatoRepository;
 import com.fatec.vagasFatec.repository.EmpresaRepository;
 import lombok.RequiredArgsConstructor;
@@ -40,8 +42,13 @@ public class AuthController {
 
         UserDetails user = (UserDetails) auth.getPrincipal();
 
+
         // Descobre se é candidato ou empresa
         Optional<Candidato> candidato = candidatoRepository.findByEmailCandidato(user.getUsername());
+        Candidato candidato1 = candidatoRepository.findByEmailCandidato(user.getUsername()).orElseThrow(() -> new RegraDeNegocioVioladaException("Usuario não encontrado"));
+        if (candidato1.getStatusCandidato() != StatusCandidato.ATIVO){
+            throw new RegraDeNegocioVioladaException("Usuario Inativo");
+        }
         if (candidato.isPresent()) {
             String token = jwtService.generateToken(
                     candidato.get().getId(),
