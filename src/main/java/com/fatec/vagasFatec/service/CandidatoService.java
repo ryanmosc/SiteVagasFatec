@@ -40,7 +40,9 @@ public class CandidatoService {
                  candidato.getLinkLinkedin(),
                  candidato.getLinkGithub(),
                  candidato.getBioCandidato(),
-                 candidato.getStatusCandidato()
+                 candidato.getStatusCandidato(),
+                candidato.getCaminhoCurriculo(),
+                candidato.getNomeCurriculo()
         );
     }
 

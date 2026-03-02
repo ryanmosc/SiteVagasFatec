@@ -1,6 +1,9 @@
 package com.fatec.vagasFatec.Dto.CandidatoDTO;
 
+import org.springframework.web.multipart.MultipartFile;
+
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 public record CandidatoAtualizarPerfilDTo(
         String telefone,
@@ -8,6 +11,7 @@ public record CandidatoAtualizarPerfilDTo(
         String linkedin,
         String  github,
         String bio,
-        LocalDate dataNascimento
+        LocalDate dataNascimento,
+        MultipartFile curriculo
 ) {
 }

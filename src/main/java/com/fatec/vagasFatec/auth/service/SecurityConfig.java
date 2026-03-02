@@ -41,7 +41,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/vagas/**").permitAll()         // detalhes de vaga aberta (se existir)
 
                         // === Rotas de CANDIDATO (ações próprias) ===
-                        .requestMatchers("/api/candidatos/perfil").hasRole("CANDIDATO")       // ver/atualizar meu perfil
+                        .requestMatchers("/api/candidatos/perfil").hasRole("CANDIDATO")
+                        .requestMatchers("/api/candidatos/perfil/curriculo").hasRole("CANDIDATO")
                         .requestMatchers("/api/candidaturas/minhas").hasRole("CANDIDATO")     // minhas candidaturas
                         .requestMatchers(HttpMethod.POST, "/api/candidaturas/vaga/**").hasRole("CANDIDATO")   // se candidatar
                         .requestMatchers(HttpMethod.PATCH, "/api/candidaturas/vaga/*/desistir").hasRole("CANDIDATO")

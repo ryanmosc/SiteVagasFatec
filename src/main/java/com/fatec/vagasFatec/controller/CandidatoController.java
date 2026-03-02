@@ -4,12 +4,15 @@ import com.fatec.vagasFatec.Dto.CandidatoDTO.CandidatoAtualizarPerfilDTo;
 import com.fatec.vagasFatec.Dto.CandidatoDTO.CandidatoCadastroDTO;
 import com.fatec.vagasFatec.Dto.CandidatoDTO.CandidatoResponseDTO;
 import com.fatec.vagasFatec.service.CandidatoService;
+import com.fatec.vagasFatec.utils.ConverterCurriculo;
 import com.fatec.vagasFatec.utils.SecurityUtil;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -19,6 +22,7 @@ import java.util.List;
 public class CandidatoController {
 
     private final CandidatoService candidatoService;
+    private final ConverterCurriculo converterCurriculo;
 
     //Não precisa de role
     @PostMapping
@@ -47,6 +51,12 @@ public class CandidatoController {
         Long candidatoLogado = SecurityUtil.getCurrentUserId();
         CandidatoResponseDTO candidatoResponseDTO = candidatoService.atualizarDadosPerfil(dto, candidatoLogado);
         return ResponseEntity.ok().body(candidatoResponseDTO);
+    }
+
+    @PatchMapping(value = "/perfil/curriculo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Void> atualizarCurriculo(@RequestParam("curriculo") MultipartFile curriculo) {
+        converterCurriculo.salvarCurriculo(curriculo);
+        return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/admin/{ra}/desativar")

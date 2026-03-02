@@ -13,3 +13,6 @@ spring:
       hibernate:
         ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:update}
       show-sql: true
+app:
+  upload:
+    curriculos-dir: "C:/Users/ryan.moscardini/Desktop/SiteVagasFatec/uploads/curriculos"

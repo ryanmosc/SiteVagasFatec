@@ -17,6 +17,8 @@ public record CandidatoResponseDTO(
         String linkLinkedin,
         String linkGithub,
         String bioCandidato,
-        StatusCandidato statusCandidato
+        StatusCandidato statusCandidato,
+        String caminhoCurriculo,
+        String nomeCurriculo
 ) {
 }

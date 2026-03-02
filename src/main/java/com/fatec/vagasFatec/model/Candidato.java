@@ -74,6 +74,15 @@ public class Candidato {
     @Column(name = "data_cadastro")
     private LocalDateTime dataCadastro;
 
+    @Column(name = "curriculo_path")
+    private String caminhoCurriculo;
+
+    @Column(name = "curriculo_nome")
+    private String nomeCurriculo;
+
+    @Column(name = "data_alteracao_curriculo")
+    private LocalDateTime dataAlteracaoCurriculo;
+
     @PrePersist
     public void prePersist(){
         statusCandidato = StatusCandidato.ATIVO;
