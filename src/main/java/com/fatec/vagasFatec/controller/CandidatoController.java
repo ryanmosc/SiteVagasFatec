@@ -3,9 +3,13 @@ package com.fatec.vagasFatec.controller;
 import com.fatec.vagasFatec.Dto.CandidatoDTO.CandidatoAtualizarPerfilDTo;
 import com.fatec.vagasFatec.Dto.CandidatoDTO.CandidatoCadastroDTO;
 import com.fatec.vagasFatec.Dto.CandidatoDTO.CandidatoResponseDTO;
+import com.fatec.vagasFatec.exceptions.DadosNaoEncontrados;
+import com.fatec.vagasFatec.model.Candidato;
+import com.fatec.vagasFatec.repository.CandidatoRepository;
 import com.fatec.vagasFatec.service.CandidatoService;
 import com.fatec.vagasFatec.utils.ConverterCurriculo;
 import com.fatec.vagasFatec.utils.SecurityUtil;
+import org.springframework.core.io.Resource;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -23,6 +27,7 @@ public class CandidatoController {
 
     private final CandidatoService candidatoService;
     private final ConverterCurriculo converterCurriculo;
+    private final CandidatoRepository candidatoRepository;
 
     //Não precisa de role
     @PostMapping
@@ -53,10 +58,23 @@ public class CandidatoController {
         return ResponseEntity.ok().body(candidatoResponseDTO);
     }
 
+
+    //Enviar curriculo, opção disponivel somente apos o cadastro
     @PatchMapping(value = "/perfil/curriculo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Void> atualizarCurriculo(@RequestParam("curriculo") MultipartFile curriculo) {
         converterCurriculo.salvarCurriculo(curriculo);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/perfil/curriculo/visualizar")
+    public ResponseEntity<Resource> visualizar() {
+        Long candidatoId = 1L; //SecurityUtil.getCurrentUserId();
+        Candidato candidato = candidatoRepository.findById(candidatoId)
+                .orElseThrow(() -> new DadosNaoEncontrados("Candidato não encontrado"));
+
+        String nomeArquivo = new java.io.File(candidato.getCaminhoCurriculo()).getName();
+
+        return converterCurriculo.visualizarCurriculo(nomeArquivo);
     }
 
     @PatchMapping("/admin/{ra}/desativar")
