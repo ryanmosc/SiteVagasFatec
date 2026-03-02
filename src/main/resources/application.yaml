@@ -16,3 +16,5 @@ spring:
 app:
   upload:
     curriculos-dir: "C:/Users/ryan.moscardini/Desktop/SiteVagasFatec/uploads/curriculos"
+jwt:
+  token: u5P+z8xK9vR3fW1L6mN2jB8Yq4tS0V7hX9aZ1cE5gD8=

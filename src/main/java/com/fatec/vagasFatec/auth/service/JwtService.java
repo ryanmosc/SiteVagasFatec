@@ -2,6 +2,7 @@ package com.fatec.vagasFatec.auth.service;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.security.Key;
@@ -10,7 +11,8 @@ import java.util.Date;
 @Service
 public class JwtService {
 
-    private final String SECRET = "SUA_CHAVE_SUPER_SECRETA_COM_256_BITS_MINIMO";
+    @Value("${jwt.token}")
+    private String SECRET;
     private final long EXPIRATION = 1000 * 60 * 30; // 30 minutos
 
     private Key getSignKey() {
