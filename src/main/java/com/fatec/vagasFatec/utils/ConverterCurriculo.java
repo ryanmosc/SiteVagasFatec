@@ -60,13 +60,38 @@ public class ConverterCurriculo {
         String nomeUnico = candidatoLogado + "-" + System.currentTimeMillis() + extensao;
         String caminhoCompleto = caminhoCurriculo + File.separator + nomeUnico;
 
+
+
+        Long candidatoId = SecurityUtil.getCurrentUserId();
+
+        // 1. Busca o candidato ANTES de salvar o novo arquivo
+        Candidato candidato = candidatoRepository.findById(candidatoId)
+                .orElseThrow(() -> new DadosNaoEncontrados("Candidato não encontrado"));
+
+        // 2. FEATURE: Limpeza de arquivo antigo
+        if (candidato.getCaminhoCurriculo() != null) {
+            try {
+                // Extraímos apenas o nome do arquivo do banco (ex: "1-12345.pdf")
+                String nomeArquivoAntigo = new java.io.File(candidato.getCaminhoCurriculo()).getName();
+
+                // Montamos o caminho completo usando o seu 'caminhoCurriculo' do YML
+                java.nio.file.Path pathAntigo = java.nio.file.Paths.get(caminhoCurriculo)
+                        .resolve(nomeArquivoAntigo)
+                        .normalize();
+
+                // Deleta se o arquivo realmente existir no disco
+                java.nio.file.Files.deleteIfExists(pathAntigo);
+                System.out.println("Arquivo antigo removido com sucesso: " + nomeArquivoAntigo);
+
+            } catch (IOException e) {
+                // Logamos o erro mas permitimos que o upload do novo continue
+                System.err.println("Aviso: Não foi possível deletar o arquivo antigo: " + e.getMessage());
+            }
+        }
+
+
         try {
             arquivo.transferTo(new File(caminhoCompleto));
-
-            // Atualiza o candidato no banco
-            Candidato candidato = candidatoRepository.findById(candidatoLogado)
-                    .orElseThrow(() -> new DadosNaoEncontrados("Candidato não encontrado"));
-
             candidato.setCaminhoCurriculo("/uploads/curriculos/" + nomeUnico);
             candidato.setNomeCurriculo(originalFilename);
             candidato.setDataAlteracaoCurriculo(LocalDateTime.now());

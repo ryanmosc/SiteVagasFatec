@@ -68,7 +68,7 @@ public class CandidatoController {
 
     @GetMapping("/perfil/curriculo/visualizar")
     public ResponseEntity<Resource> visualizar() {
-        Long candidatoId = 1L; //SecurityUtil.getCurrentUserId();
+        Long candidatoId = 2L; //SecurityUtil.getCurrentUserId();
         Candidato candidato = candidatoRepository.findById(candidatoId)
                 .orElseThrow(() -> new DadosNaoEncontrados("Candidato não encontrado"));
 
