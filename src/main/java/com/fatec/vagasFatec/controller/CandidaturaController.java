@@ -35,7 +35,7 @@ public class CandidaturaController {
     }
 
     //Precisa ter  a role de candidato
-    @GetMapping("/vaga/minhas")
+    @GetMapping("/minhas")
     public ResponseEntity<List<CandidaturaResponseDTO>> listarVagasDoCandidato(){
         Long candidatoLogado = SecurityUtil.getCurrentUserId();
         List<CandidaturaResponseDTO> lista = candidaturaService.listarTodasCandidaturasAluno(candidatoLogado);
