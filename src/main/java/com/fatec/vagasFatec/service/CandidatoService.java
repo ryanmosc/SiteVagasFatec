@@ -11,6 +11,7 @@ import com.fatec.vagasFatec.model.Candidato;
 import com.fatec.vagasFatec.model.Enum.Role;
 import com.fatec.vagasFatec.model.Enum.StatusCandidato;
 import com.fatec.vagasFatec.repository.CandidatoRepository;
+import com.fatec.vagasFatec.utils.EmailSender;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -23,8 +24,8 @@ import java.util.List;
 public class CandidatoService {
 
     private final CandidatoRepository candidatoRepository;
-
     private final PasswordEncoder passwordEncoder;
+    private final EmailSender enviarEmail;
 
 
     //Metodo Auxiliar para conversao de dados
@@ -76,7 +77,7 @@ public class CandidatoService {
                 candidato.setRole(Role.ROLE_CANDIDATO);
 
         candidatoRepository.save(candidato);
-
+        enviarEmail.enviarEmail(candidato.getEmailCandidato(), "Teste", "Teste1");
         return converterCandidatos(candidato);
     }
 

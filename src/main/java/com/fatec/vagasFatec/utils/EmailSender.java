@@ -10,6 +10,7 @@ import java.time.LocalDate;
 
 @Service
 @RequiredArgsConstructor
+//Observação, nunca utilizar o nome da classe como "MailSender", se não da erro, ok Ryan do futuro?
 public class EmailSender {
 
     private final JavaMailSender mailSender;
