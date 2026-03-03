@@ -12,6 +12,8 @@ import com.fatec.vagasFatec.model.Enum.Role;
 import com.fatec.vagasFatec.model.Enum.StatusCandidato;
 import com.fatec.vagasFatec.repository.CandidatoRepository;
 import com.fatec.vagasFatec.utils.EmailSender;
+import com.fatec.vagasFatec.utils.VerificationCodeGenerator;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -26,6 +28,7 @@ public class CandidatoService {
     private final CandidatoRepository candidatoRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailSender enviarEmail;
+    private final VerificationCodeGenerator gerarCodigo;
 
 
     //Metodo Auxiliar para conversao de dados
@@ -69,6 +72,9 @@ public class CandidatoService {
             throw new EntidadeJaExistenteException("RA já cadastrado");
         }
 
+
+
+
         Candidato candidato = new Candidato();
                 candidato.setNomeCompleto(dto.nomeCompleto());
                 candidato.setRaAluno(dto.raAluno());
@@ -76,8 +82,10 @@ public class CandidatoService {
                 candidato.setSenha(passwordEncoder.encode(dto.senha()));
                 candidato.setRole(Role.ROLE_CANDIDATO);
 
+        String codigo = gerarCodigo.gerarCodigoValidacao();
+        enviarEmail.enviarEmail(candidato.getEmailCandidato(), "OLá, segue abaixo o código para validação de seu registro",codigo);
+
         candidatoRepository.save(candidato);
-        enviarEmail.enviarEmail(candidato.getEmailCandidato(), "Teste", "Teste1");
         return converterCandidatos(candidato);
     }
 

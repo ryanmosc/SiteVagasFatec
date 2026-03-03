@@ -1,5 +1,6 @@
 package com.fatec.vagasFatec.utils;
 
+import com.fatec.vagasFatec.repository.CandidatoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.mail.SimpleMailMessage;
