@@ -85,7 +85,7 @@ public class Candidato {
 
     @PrePersist
     public void prePersist(){
-        statusCandidato = StatusCandidato.ATIVO;
+        statusCandidato = StatusCandidato.AGUARDANDO;
         dataCadastro = LocalDateTime.now();
         role = Role.ROLE_CANDIDATO;
     }

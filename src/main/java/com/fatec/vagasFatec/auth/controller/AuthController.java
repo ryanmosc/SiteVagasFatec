@@ -7,6 +7,8 @@ import com.fatec.vagasFatec.model.Empresa;
 import com.fatec.vagasFatec.model.Enum.StatusCandidato;
 import com.fatec.vagasFatec.repository.CandidatoRepository;
 import com.fatec.vagasFatec.repository.EmpresaRepository;
+import com.fatec.vagasFatec.utils.EmailSender;
+import com.fatec.vagasFatec.utils.VerificationCodeGenerator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -29,6 +31,8 @@ public class AuthController {
     private final JwtService jwtService;
     private final CandidatoRepository candidatoRepository;
     private final EmpresaRepository empresaRepository;
+    private final EmailSender enviarEmail;
+    private final VerificationCodeGenerator gerarCodigo;
 
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginRequestDTO request) {
@@ -46,9 +50,15 @@ public class AuthController {
         // Descobre se é candidato ou empresa
         Optional<Candidato> candidato = candidatoRepository.findByEmailCandidato(user.getUsername());
         Candidato candidato1 = candidatoRepository.findByEmailCandidato(user.getUsername()).orElseThrow(() -> new RegraDeNegocioVioladaException("Usuario não encontrado"));
+        if(candidato1.getStatusCandidato() == StatusCandidato.AGUARDANDO){
+            String codigo = gerarCodigo.gerarCodigoValidacao();
+            enviarEmail.enviarEmail(candidato1.getEmailCandidato(), "OLá, segue abaixo o código para validação de seu registro",codigo);
+            throw new RegraDeNegocioVioladaException("Favor validar sua conta. Verifique o e-mail: " + candidato1.getEmailCandidato() + " e confirme o código");
+        }
         if (candidato1.getStatusCandidato() != StatusCandidato.ATIVO){
             throw new RegraDeNegocioVioladaException("Usuario Inativo");
         }
+
         if (candidato.isPresent()) {
             String token = jwtService.generateToken(
                     candidato.get().getId(),

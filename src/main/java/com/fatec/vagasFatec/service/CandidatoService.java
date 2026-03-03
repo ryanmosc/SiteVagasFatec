@@ -72,9 +72,6 @@ public class CandidatoService {
             throw new EntidadeJaExistenteException("RA já cadastrado");
         }
 
-
-
-
         Candidato candidato = new Candidato();
                 candidato.setNomeCompleto(dto.nomeCompleto());
                 candidato.setRaAluno(dto.raAluno());
