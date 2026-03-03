@@ -39,6 +39,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/empresas").permitAll()        // cadastro de empresa
                         .requestMatchers(HttpMethod.GET, "/api/vagas").permitAll()            // listar vagas abertas (público)
                         .requestMatchers(HttpMethod.GET, "/api/vagas/**").permitAll()         // detalhes de vaga aberta (se existir)
+                        .requestMatchers(HttpMethod.POST, "/api/candidatos/validar").permitAll()
 
                         // === Rotas de CANDIDATO (ações próprias) ===
                         .requestMatchers("/api/candidatos/perfil").hasRole("CANDIDATO")
@@ -86,6 +87,7 @@ public class SecurityConfig {
             return config;
         };
     }
+
 
     @Bean
     public PasswordEncoder passwordEncoder() {

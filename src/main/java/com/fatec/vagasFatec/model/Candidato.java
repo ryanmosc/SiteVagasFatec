@@ -83,6 +83,17 @@ public class Candidato {
     @Column(name = "data_alteracao_curriculo")
     private LocalDateTime dataAlteracaoCurriculo;
 
+    //------------------------------------------------------------
+    @Column(name = "token", nullable = true, unique = true)
+    private String token;
+
+
+    @Column(name = "created_at", nullable = true)
+    private LocalDateTime createdAt;
+
+    @Column(name = "expires_at", nullable = true)
+    private LocalDateTime expiresAt;
+
     @PrePersist
     public void prePersist(){
         statusCandidato = StatusCandidato.AGUARDANDO;

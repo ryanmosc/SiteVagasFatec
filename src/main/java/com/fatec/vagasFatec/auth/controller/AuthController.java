@@ -51,7 +51,7 @@ public class AuthController {
         Optional<Candidato> candidato = candidatoRepository.findByEmailCandidato(user.getUsername());
         Candidato candidato1 = candidatoRepository.findByEmailCandidato(user.getUsername()).orElseThrow(() -> new RegraDeNegocioVioladaException("Usuario não encontrado"));
         if(candidato1.getStatusCandidato() == StatusCandidato.AGUARDANDO){
-            String codigo = gerarCodigo.gerarCodigoValidacao();
+            String codigo = gerarCodigo.gerarCodigoValidacao(candidato1.getEmailCandidato());
             enviarEmail.enviarEmail(candidato1.getEmailCandidato(), "OLá, segue abaixo o código para validação de seu registro",codigo);
             throw new RegraDeNegocioVioladaException("Favor validar sua conta. Verifique o e-mail: " + candidato1.getEmailCandidato() + " e confirme o código");
         }

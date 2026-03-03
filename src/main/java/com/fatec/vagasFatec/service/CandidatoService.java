@@ -3,7 +3,6 @@ package com.fatec.vagasFatec.service;
 import com.fatec.vagasFatec.Dto.CandidatoDTO.CandidatoAtualizarPerfilDTo;
 import com.fatec.vagasFatec.Dto.CandidatoDTO.CandidatoCadastroDTO;
 import com.fatec.vagasFatec.Dto.CandidatoDTO.CandidatoResponseDTO;
-import com.fatec.vagasFatec.exceptions.DadosInvalidosException;
 import com.fatec.vagasFatec.exceptions.DadosNaoEncontrados;
 import com.fatec.vagasFatec.exceptions.EntidadeJaExistenteException;
 import com.fatec.vagasFatec.exceptions.RegraDeNegocioVioladaException;
@@ -18,7 +17,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -29,6 +27,7 @@ public class CandidatoService {
     private final PasswordEncoder passwordEncoder;
     private final EmailSender enviarEmail;
     private final VerificationCodeGenerator gerarCodigo;
+
 
 
     //Metodo Auxiliar para conversao de dados
@@ -79,10 +78,12 @@ public class CandidatoService {
                 candidato.setSenha(passwordEncoder.encode(dto.senha()));
                 candidato.setRole(Role.ROLE_CANDIDATO);
 
-        String codigo = gerarCodigo.gerarCodigoValidacao();
+        candidatoRepository.save(candidato);
+        String codigo = gerarCodigo.gerarCodigoValidacao(candidato.getEmailCandidato());
+
         enviarEmail.enviarEmail(candidato.getEmailCandidato(), "OLá, segue abaixo o código para validação de seu registro",codigo);
 
-        candidatoRepository.save(candidato);
+
         return converterCandidatos(candidato);
     }
 

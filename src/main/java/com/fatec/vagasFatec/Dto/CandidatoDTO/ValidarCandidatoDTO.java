@@ -1,6 +1,7 @@
 package com.fatec.vagasFatec.Dto.CandidatoDTO;
 
-public record ValidarCandidato(
+public record ValidarCandidatoDTO(
+        String email,
         String codigoEmail
 ) {
 }
