@@ -2,6 +2,20 @@ spring:
   application:
     name: vagasFatec
 
+  mail:
+    host: mail.voluntariosdasaude.com.br
+    port: 465
+    username: contato@voluntariosdasaude.com.br
+    password: "1QMzQTK]Od#5*L!7"
+    properties:
+      mail:
+        smtp:
+          auth: true
+          ssl:
+            enable: true
+    default-encoding: UTF-8
+    default-from: contato@voluntariosdasaude.com.br
+
   datasource:
     url: jdbc:h2:mem:vagasdb
     driverClassName: org.h2.Driver
@@ -18,6 +32,7 @@ spring:
     hibernate:
       ddl-auto: update
     show-sql: true
+
 app:
   upload:
     curriculos-dir: "C:/Users/ryan.moscardini/Desktop/SiteVagasFatec/uploads/curriculos"

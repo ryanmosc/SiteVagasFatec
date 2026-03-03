@@ -4,6 +4,20 @@ spring:
     application:
       name: vagasFatec
 
+    mail:
+      host: mail.voluntariosdasaude.com.br
+      port: 465
+      username: contato@voluntariosdasaude.com.br
+      password: "1QMzQTK]Od#5*L!7"
+      properties:
+        mail:
+          smtp:
+            auth: true
+            ssl:
+              enable: true
+      default-encoding: UTF-8
+      default-from: contato@voluntariosdasaude.com.br
+
     datasource:
       url: ${SPRING_DATASOURCE_URL}
       username: ${SPRING_DATASOURCE_USERNAME}
