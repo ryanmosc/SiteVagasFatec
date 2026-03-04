@@ -4,8 +4,13 @@ import com.fatec.vagasFatec.Dto.CandidatoDTO.CandidatoAtualizarPerfilDTo;
 import com.fatec.vagasFatec.Dto.CandidatoDTO.CandidatoCadastroDTO;
 import com.fatec.vagasFatec.Dto.CandidatoDTO.CandidatoResponseDTO;
 import com.fatec.vagasFatec.exceptions.DadosNaoEncontrados;
+import com.fatec.vagasFatec.exceptions.RegraDeNegocioVioladaException;
 import com.fatec.vagasFatec.model.Candidato;
+import com.fatec.vagasFatec.model.Candidatura;
+import com.fatec.vagasFatec.model.Empresa;
 import com.fatec.vagasFatec.repository.CandidatoRepository;
+import com.fatec.vagasFatec.repository.CandidaturaRepository;
+import com.fatec.vagasFatec.repository.EmpresaRepository;
 import com.fatec.vagasFatec.service.CandidatoService;
 import com.fatec.vagasFatec.utils.ConverterCurriculo;
 import com.fatec.vagasFatec.utils.SecurityUtil;
@@ -29,6 +34,8 @@ public class CandidatoController {
     private final CandidatoService candidatoService;
     private final ConverterCurriculo converterCurriculo;
     private final CandidatoRepository candidatoRepository;
+    private final EmpresaRepository empresaRepository;
+    private final CandidaturaRepository candidaturaRepository;
 
     //Não precisa de role
     @PostMapping
@@ -67,6 +74,7 @@ public class CandidatoController {
         return ResponseEntity.noContent().build();
     }
 
+    //Somente o candidato vizualiza
     @GetMapping("/perfil/curriculo/visualizar")
     public ResponseEntity<Resource> visualizarMeuCurriculo() throws MalformedURLException {
         Long id = SecurityUtil.getCurrentUserId();
@@ -78,6 +86,24 @@ public class CandidatoController {
         }
 
         return converterCurriculo.visualizarCurriculo(c.getCaminhoCurriculo());
+    }
+
+    //Empresa vizualisa na candidatura
+    @GetMapping("/perfil/curriculo/visualizar/{id_candidatura}/candidatura")
+    public ResponseEntity<Resource> vizualisarCurriculoCandidato(@PathVariable Long id_candidatura) throws MalformedURLException {
+        Long id = SecurityUtil.getCurrentUserId();
+        Candidatura candidatura = candidaturaRepository.findById(id_candidatura).orElseThrow(() -> new DadosNaoEncontrados("Candidatura não encontrada"));
+        Empresa e = empresaRepository.findById(id).orElseThrow(() -> new DadosNaoEncontrados("Empresa não encontrada"));
+        if (e.getId() != candidatura.getVaga().getEmpresa().getId()){
+            throw new RegraDeNegocioVioladaException("Empresa não é dona da vaga");
+        }
+        Candidato c = candidatoRepository.findById(candidatura.getCandidato().getId())
+                .orElseThrow(() -> new DadosNaoEncontrados("Candidato não encontrado"));
+        if (c.getCaminhoCurriculo() == null) {
+            return ResponseEntity.noContent().build(); // ou 404, você decide
+        }
+        return converterCurriculo.visualizarCurriculo(c.getCaminhoCurriculo());
+
     }
 
     @PatchMapping("/admin/{ra}/desativar")

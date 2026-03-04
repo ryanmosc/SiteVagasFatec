@@ -36,7 +36,7 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginRequestDTO request) {
-
+        // Autentica primeiro (email + senha)
         Authentication auth = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         request.email(),
@@ -44,38 +44,61 @@ public class AuthController {
                 )
         );
 
-        UserDetails user = (UserDetails) auth.getPrincipal();
+        String email = auth.getName();  // email que foi autenticado com sucesso
 
+        // Tenta encontrar como Candidato
+        Optional<Candidato> optCandidato = candidatoRepository.findByEmailCandidato(email);
 
-        // Descobre se é candidato ou empresa
-        Optional<Candidato> candidato = candidatoRepository.findByEmailCandidato(user.getUsername());
-        Candidato candidato1 = candidatoRepository.findByEmailCandidato(user.getUsername()).orElseThrow(() -> new RegraDeNegocioVioladaException("Usuario não encontrado"));
-        if(candidato1.getStatusCandidato() == StatusCandidato.AGUARDANDO){
-            String codigo = gerarCodigo.gerarCodigoValidacao(candidato1.getEmailCandidato());
-            enviarEmail.enviarEmail(candidato1.getEmailCandidato(), "OLá, segue abaixo o código para validação de seu registro",codigo);
-            throw new RegraDeNegocioVioladaException("Favor validar sua conta. Verifique o e-mail: " + candidato1.getEmailCandidato() + " e confirme o código");
-        }
-        if (candidato1.getStatusCandidato() != StatusCandidato.ATIVO){
-            throw new RegraDeNegocioVioladaException("Usuario Inativo");
-        }
+        if (optCandidato.isPresent()) {
+            Candidato candidato = optCandidato.get();
 
-        if (candidato.isPresent()) {
+            // Validações específicas de candidato
+            if (candidato.getStatusCandidato() == StatusCandidato.AGUARDANDO) {
+                String codigo = gerarCodigo.gerarCodigoValidacao(candidato.getEmailCandidato());
+                enviarEmail.enviarEmail(
+                        candidato.getEmailCandidato(),
+                        "OLá, segue abaixo o código para validação de seu registro",
+                        codigo
+                );
+                throw new RegraDeNegocioVioladaException(
+                        "Favor validar sua conta. Verifique o e-mail: " +
+                                candidato.getEmailCandidato() + " e confirme o código"
+                );
+            }
+
+            if (candidato.getStatusCandidato() != StatusCandidato.ATIVO) {
+                throw new RegraDeNegocioVioladaException("Usuário Inativo");
+            }
+
+            // Gera token para candidato
             String token = jwtService.generateToken(
-                    candidato.get().getId(),
-                    candidato.get().getEmailCandidato(),
-                    candidato.get().getRole().name()
+                    candidato.getId(),
+                    candidato.getEmailCandidato(),
+                    candidato.getRole().name()
             );
+
             return ResponseEntity.ok(new LoginResponseDTO(token));
         }
 
-        Empresa empresa = empresaRepository.findByEmail(user.getUsername()).get();
+        // Se não é candidato → tenta Empresa
+        Optional<Empresa> optEmpresa = empresaRepository.findByEmail(email);
 
-        String token = jwtService.generateToken(
-                empresa.getId(),
-                empresa.getEmail(),
-                empresa.getRole().name()
-        );
+        if (optEmpresa.isPresent()) {
+            Empresa empresa = optEmpresa.get();
 
-        return ResponseEntity.ok(new LoginResponseDTO(token));
-    }
-}
+            // Aqui você pode adicionar validações futuras para empresa, se precisar
+            // Exemplo: if (empresa.getStatusEmpresa() != StatusEmpresa.ATIVO) { throw ... }
+
+            // Gera token para empresa
+            String token = jwtService.generateToken(
+                    empresa.getId(),
+                    empresa.getEmail(),
+                    empresa.getRole().name()
+            );
+
+            return ResponseEntity.ok(new LoginResponseDTO(token));
+        }
+
+        // Caso raro: autenticou mas não achou em nenhum repositório
+        throw new RegraDeNegocioVioladaException("Usuário não encontrado");
+    }}
