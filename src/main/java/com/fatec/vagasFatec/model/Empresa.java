@@ -65,9 +65,20 @@ public class Empresa {
     @OneToMany(mappedBy = "empresa")
     private List<Vaga> vagas;
 
+    //------------------------------------------------------------
+    @Column(name = "token", nullable = true, unique = true)
+    private String token;
+
+
+    @Column(name = "created_at", nullable = true)
+    private LocalDateTime createdAt;
+
+    @Column(name = "expires_at", nullable = true)
+    private LocalDateTime expiresAt;
+
     @PrePersist
     public void prePersist(){
-       statusEmpresa = StatusEmpresa.ATIVO;
+       statusEmpresa = StatusEmpresa.AGUARDANDO;
        role =Role.ROLE_EMPRESA;
     }
 }

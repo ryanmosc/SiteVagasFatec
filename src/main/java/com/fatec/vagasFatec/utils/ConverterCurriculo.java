@@ -17,6 +17,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
@@ -99,21 +100,30 @@ public class ConverterCurriculo {
 
 
 
-    public ResponseEntity<Resource> visualizarCurriculo(String nomeArquivoNoBanco) {
-        try {
-            Path arquivoPath = Paths.get(caminhoCurriculo).resolve(nomeArquivoNoBanco).normalize();
-            UrlResource resource = new UrlResource(arquivoPath.toUri());
-
-            if (resource.exists() || resource.isReadable()) {
-                return ResponseEntity.ok()
-                        .contentType(MediaType.APPLICATION_PDF)
-                        .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
-                        .body((Resource) resource);
-            } else {
-                throw new DadosNaoEncontrados("Arquivo não encontrado");
-            }
-        } catch (Exception e) {
-            throw new DadosInvalidosException("Erro ao carregar PDF: " + e.getMessage());
+    public ResponseEntity<Resource> visualizarCurriculo(String caminhoCompletoSalvoNoBanco) throws MalformedURLException {
+        if (caminhoCompletoSalvoNoBanco == null || !caminhoCompletoSalvoNoBanco.startsWith("/uploads/curriculos/")) {
+            throw new DadosInvalidosException("Caminho de currículo inválido");
         }
+
+        // Extrai apenas o nome do arquivo (parte final)
+        String nomeArquivo = caminhoCompletoSalvoNoBanco.substring(caminhoCompletoSalvoNoBanco.lastIndexOf("/") + 1);
+
+        Path arquivoPath = Paths.get(caminhoCurriculo).resolve(nomeArquivo).normalize();
+
+        // Importante: impede path traversal
+        if (!arquivoPath.startsWith(Paths.get(caminhoCurriculo).normalize())) {
+            throw new DadosInvalidosException("Caminho inválido (tentativa de traversal)");
+        }
+
+        UrlResource resource = new UrlResource(arquivoPath.toUri());
+
+        if (!resource.exists() || !resource.isReadable()) {
+            throw new DadosNaoEncontrados("Currículo não encontrado");
+        }
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
+                .body(resource);
     }
 }

@@ -18,6 +18,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.net.MalformedURLException;
 import java.util.List;
 
 @RestController
@@ -67,14 +68,16 @@ public class CandidatoController {
     }
 
     @GetMapping("/perfil/curriculo/visualizar")
-    public ResponseEntity<Resource> visualizar() {
-        Long candidatoId = 1L; //SecurityUtil.getCurrentUserId();
-        Candidato candidato = candidatoRepository.findById(candidatoId)
+    public ResponseEntity<Resource> visualizarMeuCurriculo() throws MalformedURLException {
+        Long id = SecurityUtil.getCurrentUserId();
+        Candidato c = candidatoRepository.findById(id)
                 .orElseThrow(() -> new DadosNaoEncontrados("Candidato não encontrado"));
 
-        String nomeArquivo = new java.io.File(candidato.getCaminhoCurriculo()).getName();
+        if (c.getCaminhoCurriculo() == null) {
+            return ResponseEntity.noContent().build(); // ou 404, você decide
+        }
 
-        return converterCurriculo.visualizarCurriculo(nomeArquivo);
+        return converterCurriculo.visualizarCurriculo(c.getCaminhoCurriculo());
     }
 
     @PatchMapping("/admin/{ra}/desativar")

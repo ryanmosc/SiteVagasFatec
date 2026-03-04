@@ -19,4 +19,10 @@ public class ValidarCodigoController {
         return ResponseEntity.noContent().build();
 
     }
+
+    @PostMapping("/reenviar")
+    public ResponseEntity<Void> reenviarCodigo(String email){
+        verificationCodeGenerator.gerarCodigoValidacao(email);
+        return ResponseEntity.noContent().build();
+    }
 }
