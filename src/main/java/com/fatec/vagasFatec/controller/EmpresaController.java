@@ -1,9 +1,11 @@
 package com.fatec.vagasFatec.controller;
 
 import com.fatec.vagasFatec.Dto.EmpresaDTO.EmpreRequestDTO;
+import com.fatec.vagasFatec.Dto.EmpresaDTO.EmpresaAtualizarDTO;
 import com.fatec.vagasFatec.Dto.EmpresaDTO.EmpresaResponseDTO;
 import com.fatec.vagasFatec.model.Empresa;
 import com.fatec.vagasFatec.service.EmpresaService;
+import com.fatec.vagasFatec.utils.SecurityUtil;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -31,4 +33,14 @@ public class EmpresaController {
     public ResponseEntity<List<EmpresaResponseDTO>> listarEmpresas() {
         return ResponseEntity.ok(empresaService.listarEmpresas());
     }
+
+    //AtualizarDadosDaEmpresa
+    @PatchMapping("/perfil")
+    public ResponseEntity<EmpresaResponseDTO> atualizarDadosEmpresa(@RequestBody EmpresaAtualizarDTO dados){
+        Long empresaLogada = SecurityUtil.getCurrentUserId();
+        EmpresaResponseDTO dadosAtt = empresaService.atualizarDadosEmpresa(dados, empresaLogada);
+        return ResponseEntity.ok(dadosAtt);
+
+    }
+
 }

@@ -100,7 +100,7 @@ public class CandidatoController {
         Candidato c = candidatoRepository.findById(candidatura.getCandidato().getId())
                 .orElseThrow(() -> new DadosNaoEncontrados("Candidato não encontrado"));
         if (c.getCaminhoCurriculo() == null) {
-            return ResponseEntity.noContent().build(); // ou 404, você decide
+            return ResponseEntity.noContent().build();
         }
         return converterCurriculo.visualizarCurriculo(c.getCaminhoCurriculo());
 

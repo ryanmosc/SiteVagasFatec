@@ -1,8 +1,11 @@
 package com.fatec.vagasFatec.service;
 
 import com.fatec.vagasFatec.Dto.EmpresaDTO.EmpreRequestDTO;
+import com.fatec.vagasFatec.Dto.EmpresaDTO.EmpresaAtualizarDTO;
 import com.fatec.vagasFatec.Dto.EmpresaDTO.EmpresaResponseDTO;
+import com.fatec.vagasFatec.exceptions.DadosInvalidosException;
 import com.fatec.vagasFatec.exceptions.DadosNaoEncontrados;
+import com.fatec.vagasFatec.exceptions.RegraDeNegocioVioladaException;
 import com.fatec.vagasFatec.model.Empresa;
 import com.fatec.vagasFatec.model.Enum.Role;
 import com.fatec.vagasFatec.model.Enum.StatusEmpresa;
@@ -67,4 +70,32 @@ public class EmpresaService {
     }
 
     //Criar metodo de atualização de dados da empresa igual o do candidato
+    public EmpresaResponseDTO atualizarDadosEmpresa(EmpresaAtualizarDTO dados, Long id_empresa){
+        Empresa empresa = empresaRepository.findById(id_empresa).orElseThrow(() -> new DadosNaoEncontrados("Empresa não encontrada"));
+        if (empresa.getStatusEmpresa() != StatusEmpresa.ATIVO){
+            throw new RegraDeNegocioVioladaException("Empresa não está ativa");
+        }
+        if (!empresa.getId().equals(id_empresa)){
+            throw new DadosInvalidosException("Empresa não é dona do perfil");
+        }
+
+        if (dados.razaoSocial() != null){
+            empresa.setRazaoSocial(dados.razaoSocial());
+        }
+        if (dados.nomeFantasia() != null){
+            empresa.setNomeFantasia(dados.nomeFantasia());
+        }
+        if (dados.email() != null){
+            empresa.setEmail(dados.email());
+        }
+        if (dados.cnpj() != null){
+            empresa.setCnpj(dados.cnpj());
+        }
+        if (dados.telefone() != null){
+            empresa.setTelefone(dados.telefone());
+        }
+
+        empresaRepository.save(empresa);
+        return converter(empresa);
+    }
 }
