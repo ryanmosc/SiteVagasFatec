@@ -50,7 +50,7 @@ public class CandidatoController {
         List<CandidatoResponseDTO> responseEntities = candidatoService.listarTodosCandidatos();
         return ResponseEntity.ok().body(responseEntities);
     }
-
+//aaaaa
     //Precisa ter role ROLE_CANDIDATO e o id ser o certo
     @GetMapping("/perfil")
     public ResponseEntity<CandidatoResponseDTO> listarDadosAlunoPorRa(){
