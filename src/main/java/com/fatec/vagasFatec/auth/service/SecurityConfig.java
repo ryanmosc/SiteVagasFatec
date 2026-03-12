@@ -1,5 +1,7 @@
 package com.fatec.vagasFatec.auth.service;
 
+import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
+import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -21,10 +23,12 @@ import java.util.List;
 
 @Configuration
 @RequiredArgsConstructor
+@SecurityScheme(name = SecurityConfig.SECURITY, type = SecuritySchemeType.HTTP,bearerFormat = "JWT", scheme = "bearer")
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final CustomUserDetailsService userDetailsService;
+    public static final String SECURITY = "BearerAuth";
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -60,8 +64,12 @@ public class SecurityConfig {
                         // .requestMatchers("/api/candidatos", "/api/empresas", "/api/candidaturas").hasRole("ADMIN")
                         // .requestMatchers(HttpMethod.PATCH, "/api/candidatos/**/desativar").hasRole("ADMIN")
 
+                        // Swagger
+                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         // Tudo o mais exige autenticação (fallback seguro)
                         .anyRequest().authenticated()
+
+
                 )
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider())
