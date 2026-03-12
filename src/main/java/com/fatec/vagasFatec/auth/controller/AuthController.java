@@ -9,6 +9,9 @@ import com.fatec.vagasFatec.repository.CandidatoRepository;
 import com.fatec.vagasFatec.repository.EmpresaRepository;
 import com.fatec.vagasFatec.utils.EmailSender;
 import com.fatec.vagasFatec.utils.VerificationCodeGenerator;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -25,6 +28,7 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
+@Tag(name = "Autenticação", description = "Endpoints para login e geração de tokens de acesso (JWT)")
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;
@@ -35,6 +39,10 @@ public class AuthController {
     private final VerificationCodeGenerator gerarCodigo;
 
     @PostMapping("/login")
+    @Operation(summary = "Autenticar usuário", description = "Realiza o login de Candidatos ou Empresas, retornando um Bearer Token. Caso o candidato não esteja validado, um código será enviado por e-mail.")
+    @ApiResponse(responseCode = "200", description = "Login realizado com sucesso - Token gerado")
+    @ApiResponse(responseCode = "401", description = "Credenciais inválidas")
+    @ApiResponse(responseCode = "403", description = "Conta aguardando validação ou inativa")
     public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginRequestDTO request) {
         // Autentica primeiro (email + senha)
         Authentication auth = authenticationManager.authenticate(
@@ -86,9 +94,6 @@ public class AuthController {
         if (optEmpresa.isPresent()) {
             Empresa empresa = optEmpresa.get();
 
-            // Aqui você pode adicionar validações futuras para empresa, se precisar
-            // Exemplo: if (empresa.getStatusEmpresa() != StatusEmpresa.ATIVO) { throw ... }
-
             // Gera token para empresa
             String token = jwtService.generateToken(
                     empresa.getId(),
@@ -101,4 +106,5 @@ public class AuthController {
 
         // Caso raro: autenticou mas não achou em nenhum repositório
         throw new RegraDeNegocioVioladaException("Usuário não encontrado");
-    }}
+    }
+}

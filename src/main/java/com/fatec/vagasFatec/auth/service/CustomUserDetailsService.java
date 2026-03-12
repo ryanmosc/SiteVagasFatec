@@ -37,7 +37,7 @@ public class CustomUserDetailsService implements UserDetailsService {
             return buildUser(empresa.get().getId(), empresa.get().getEmail(), empresa.get().getSenha(), empresa.get().getRole().name());
         }
 
-        throw new UsernameNotFoundException("Usuário não encontrado");
+        throw new DadosNaoEncontrados("Usuário não encontrado");
     }
 
     private UserDetails buildUser(Long id, String email, String senha, String role) {
