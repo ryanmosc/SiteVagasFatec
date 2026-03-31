@@ -1,5 +1,6 @@
 package com.fatec.vagasFatec.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fatec.vagasFatec.model.Enum.CursosEnum;
 import com.fatec.vagasFatec.model.Enum.ModalidadeVagaEnum;
 import com.fatec.vagasFatec.model.Enum.StatusVaga;
@@ -14,6 +15,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -44,6 +46,7 @@ public class Vaga {
     @Column(name = "cursoVaga")
     private CursosEnum cursoVaga;
 
+    @JsonProperty("tipoVaga")
     @NotNull(message = "Erro: O tipo da vaga (Estágio/CLT/etc) é obrigatório")
     @Column(name = "tipoVaga")
     @Enumerated(EnumType.STRING)
@@ -73,6 +76,10 @@ public class Vaga {
     @Column(name = "statusVaga")
     @Enumerated(EnumType.STRING)
     private StatusVaga statusvaga;
+
+
+    @OneToMany(mappedBy = "vaga", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Candidatura> candidaturas;
 
     @PrePersist
     public void prePersist(){
