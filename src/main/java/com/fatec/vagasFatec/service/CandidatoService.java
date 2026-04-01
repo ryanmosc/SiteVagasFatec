@@ -2,6 +2,7 @@ package com.fatec.vagasFatec.service;
 
 import com.fatec.vagasFatec.Dto.CandidatoDTO.CandidatoAtualizarPerfilDTo;
 import com.fatec.vagasFatec.Dto.CandidatoDTO.CandidatoCadastroDTO;
+import com.fatec.vagasFatec.Dto.CandidatoDTO.CandidatoMostrarDTO;
 import com.fatec.vagasFatec.Dto.CandidatoDTO.CandidatoResponseDTO;
 import com.fatec.vagasFatec.exceptions.DadosNaoEncontrados;
 import com.fatec.vagasFatec.exceptions.EntidadeJaExistenteException;
@@ -149,5 +150,21 @@ public class CandidatoService {
         Candidato candidato = candidatoRepository.findByRaAluno(raAluno).orElseThrow(() -> new RuntimeException("Candidato não encontrado"));
         candidato.setStatusCandidato(StatusCandidato.ATIVO);
         candidatoRepository.save(candidato);
+    }
+
+    //Listar Todos os dados do Candidato(Teste)
+    public CandidatoMostrarDTO mostrarDadosCandidato(Long id){
+        Candidato candidato = candidatoRepository.findById(id).orElseThrow(() -> new RuntimeException("Candidato não encontrado"));
+        return new CandidatoMostrarDTO(
+
+                candidato.getId(),
+                candidato.getNomeCompleto(),
+                candidato.getEmailCandidato(),
+                candidato.getTelefone(),
+                candidato.getCidade(),
+                candidato.getLinkLinkedin(),
+                candidato.getLinkGithub(),
+                candidato.getBioCandidato()
+        );
     }
 }

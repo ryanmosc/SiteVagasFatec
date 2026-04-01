@@ -2,6 +2,7 @@ package com.fatec.vagasFatec.controller;
 
 import com.fatec.vagasFatec.Dto.CandidatoDTO.CandidatoAtualizarPerfilDTo;
 import com.fatec.vagasFatec.Dto.CandidatoDTO.CandidatoCadastroDTO;
+import com.fatec.vagasFatec.Dto.CandidatoDTO.CandidatoMostrarDTO;
 import com.fatec.vagasFatec.Dto.CandidatoDTO.CandidatoResponseDTO;
 import com.fatec.vagasFatec.auth.service.SecurityConfig;
 import com.fatec.vagasFatec.exceptions.DadosNaoEncontrados;
@@ -138,5 +139,11 @@ public class CandidatoController {
     public ResponseEntity<Void> reativarCandidato (@PathVariable String raAluno){
         candidatoService.reativarCandidato(raAluno);
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/perfil/todos/{id}")
+    public ResponseEntity<CandidatoMostrarDTO> mostrarDadosCandidato(@Valid @PathVariable Long id){
+        CandidatoMostrarDTO candidatoMostrarDTO = candidatoService.mostrarDadosCandidato(id);
+        return ResponseEntity.ok(candidatoMostrarDTO);
     }
 }

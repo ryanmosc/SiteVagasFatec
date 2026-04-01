@@ -90,4 +90,12 @@ public class CandidaturaController {
                 candidaturaService.listarCandidaturasPorVaga(idVaga, candidatoLogado)
         );
     }
+
+
+    @GetMapping("empresa/candidatura/{id_candidatura}/observacoes/mostrar")
+    public CandidaturaObservacaoDTO mostrarObservacaoEmpresa(){
+
+    }
+
+
 }
