@@ -17,6 +17,7 @@ import com.fatec.vagasFatec.repository.CandidatoRepository;
 import com.fatec.vagasFatec.repository.CandidaturaRepository;
 import com.fatec.vagasFatec.repository.EmpresaRepository;
 import com.fatec.vagasFatec.repository.Vagarepository;
+import com.fatec.vagasFatec.utils.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -134,34 +135,50 @@ public class CandidaturaService {
     }
 
 
-    //Empresa adicionar comentarios a candidaturas
-    public void adicionarComentariosCandidatura(Long id_candidatura, Long id_empresa, CandidaturaObservacaoDTO observacaoDTO){
-        Candidatura candidatura = candidaturaRepository.findById(id_candidatura).orElseThrow(() -> new RuntimeException("Candidatura não encontrada"));
-        Empresa empresa = empresaRepository.findById(id_empresa).orElseThrow(() -> new RuntimeException("Empresa nao encontrada"));
-        Candidato candidato = candidatoRepository.findById(candidatura.getCandidato().getId()).orElseThrow(() -> new RuntimeException("Candidato não encontrado"));
+    public String buscarObservacaoCandidatura(Long idCandidatura) {
+        Candidatura candidatura = candidaturaRepository.findById(idCandidatura)
+                .orElseThrow(() -> new DadosNaoEncontrados("Candidatura não encontrada"));
 
+        Long candidatoLogado = SecurityUtil.getCurrentUserId(); // Precisa importar SecurityUtil
 
-        if (!candidatura.getVaga().getEmpresa().getId().equals(id_empresa)){
+        // Segurança: só o próprio candidato pode ver a observação
+        if (!candidatura.getCandidato().getId().equals(candidatoLogado)) {
+            throw new RegraDeNegocioVioladaException("Você não tem permissão para visualizar esta observação");
+        }
+
+        return candidatura.getObservacaoEmpresa(); // pode retornar null
+    }
+
+    // ====================== MÉTODO PARA EMPRESA ======================
+    public void adicionarComentariosCandidatura(Long id_candidatura, Long id_empresa, CandidaturaObservacaoDTO observacaoDTO) {
+        Candidatura candidatura = candidaturaRepository.findById(id_candidatura)
+                .orElseThrow(() -> new RuntimeException("Candidatura não encontrada"));
+
+        Empresa empresa = empresaRepository.findById(id_empresa)
+                .orElseThrow(() -> new RuntimeException("Empresa não encontrada"));
+
+        Candidato candidato = candidatoRepository.findById(candidatura.getCandidato().getId())
+                .orElseThrow(() -> new RuntimeException("Candidato não encontrado"));
+
+        if (!candidatura.getVaga().getEmpresa().getId().equals(id_empresa)) {
             throw new RegraDeNegocioVioladaException("Empresa não é dona da vaga");
         }
-        if (empresa.getStatusEmpresa() != StatusEmpresa.ATIVO){
+        if (empresa.getStatusEmpresa() != StatusEmpresa.ATIVO) {
             throw new RegraDeNegocioVioladaException("Empresa está inativa");
         }
-        if (candidato.getStatusCandidato() == StatusCandidato.INATIVO){
+        if (candidato.getStatusCandidato() == StatusCandidato.INATIVO) {
             throw new RegraDeNegocioVioladaException("Candidato está inativo");
         }
         if (candidatura.getStatus() == StatusCandidatura.APROVADO ||
                 candidatura.getStatus() == StatusCandidatura.REJEITADO) {
             throw new RegraDeNegocioVioladaException("Processo já finalizado");
         }
-        if (observacaoDTO.observacaoCandidatura().length() > 150){
-            throw new DadosInvalidosException("mensagem muito grande máximo de 150 caracteres");
+        if (observacaoDTO.observacaoCandidatura() == null || observacaoDTO.observacaoCandidatura().trim().length() > 150) {
+            throw new DadosInvalidosException("Observação deve ter no máximo 150 caracteres");
         }
-        candidatura.setObservacaoEmpresa(observacaoDTO.observacaoCandidatura());
+
+        candidatura.setObservacaoEmpresa(observacaoDTO.observacaoCandidatura().trim());
         candidaturaRepository.save(candidatura);
-
-
-
     }
 
     //Listar candidaturas por vaga

@@ -70,13 +70,26 @@ public class CandidaturaController {
         return ResponseEntity.ok().build();
     }
 
-    @PatchMapping("empresa/candidatura/{id_candidatura}/observacoes")
-    @Operation(summary = "Adicionar observações internas", description = "Permite à empresa adicionar comentários sobre o candidato para controle interno.")
+    @PatchMapping("/empresa/candidatura/{id_candidatura}/observacoes")
+    @Operation(summary = "Adicionar observações internas", description = "Permite à empresa adicionar comentários sobre o candidato")
     @ApiResponse(responseCode = "204", description = "Observação adicionada com sucesso")
-    public ResponseEntity<Void> adicionarObservacaoCandidatura(@PathVariable @Valid Long id_candidatura, @RequestBody @Valid CandidaturaObservacaoDTO observacaoDTO){
-        Long candidatoLogado = SecurityUtil.getCurrentUserId();
-        candidaturaService.adicionarComentariosCandidatura(candidatoLogado, id_candidatura, observacaoDTO);
+    public ResponseEntity<Void> adicionarObservacaoCandidatura(
+            @PathVariable @Valid Long id_candidatura,
+            @RequestBody @Valid CandidaturaObservacaoDTO observacaoDTO) {
+
+        Long empresaLogada = SecurityUtil.getCurrentUserId();   // ← CORRIGIDO
+        candidaturaService.adicionarComentariosCandidatura(id_candidatura, empresaLogada, observacaoDTO);
         return ResponseEntity.noContent().build();
+    }
+
+    // ==================== NOVO ENDPOINT ====================
+    @GetMapping("/candidato/candidatura/{id_candidatura}/observacao")
+    @Operation(summary = "Buscar observação da empresa na minha candidatura",
+            description = "Retorna a observação deixada pela empresa para o candidato")
+    @ApiResponse(responseCode = "200", description = "Observação retornada")
+    public ResponseEntity<String> buscarMinhaObservacao(@PathVariable Long id_candidatura) {
+        String observacao = candidaturaService.buscarObservacaoCandidatura(id_candidatura);
+        return ResponseEntity.ok(observacao != null ? observacao : "");
     }
 
     @GetMapping("/empresa/vaga/{idVaga}/candidaturas_vaga")
@@ -92,10 +105,7 @@ public class CandidaturaController {
     }
 
 
-    @GetMapping("empresa/candidatura/{id_candidatura}/observacoes/mostrar")
-    public CandidaturaObservacaoDTO mostrarObservacaoEmpresa(){
 
-    }
 
 
 }
