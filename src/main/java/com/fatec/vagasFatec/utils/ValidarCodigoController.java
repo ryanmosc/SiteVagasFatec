@@ -3,10 +3,8 @@ package com.fatec.vagasFatec.utils;
 import com.fatec.vagasFatec.Dto.CandidatoDTO.ValidarCandidatoDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/candidatos/validar")
@@ -21,7 +19,7 @@ public class ValidarCodigoController {
     }
 
     @PostMapping("/reenviar")
-    public ResponseEntity<Void> reenviarCodigo(String email){
+    public ResponseEntity<Void> reenviarCodigo(@RequestParam String email){
         verificationCodeGenerator.gerarCodigoValidacao(email);
         return ResponseEntity.noContent().build();
     }

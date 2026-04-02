@@ -44,6 +44,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/vagas").permitAll()            // listar vagas abertas (público)
                         .requestMatchers(HttpMethod.GET, "/api/vagas/**").permitAll()         // detalhes de vaga aberta (se existir)
                         .requestMatchers(HttpMethod.POST, "/api/candidatos/validar").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/candidatos/validar/reenviar").permitAll()
+
 
                         // === Rotas de CANDIDATO (ações próprias) ===
                         .requestMatchers("/api/candidatos/perfil").hasRole("CANDIDATO")
