@@ -169,10 +169,13 @@ public class CandidaturaService {
         if (candidato.getStatusCandidato() == StatusCandidato.INATIVO) {
             throw new RegraDeNegocioVioladaException("Candidato está inativo");
         }
+        /*
         if (candidatura.getStatus() == StatusCandidatura.APROVADO ||
                 candidatura.getStatus() == StatusCandidatura.REJEITADO) {
             throw new RegraDeNegocioVioladaException("Processo já finalizado");
         }
+        */
+
         if (observacaoDTO.observacaoCandidatura() == null || observacaoDTO.observacaoCandidatura().trim().length() > 150) {
             throw new DadosInvalidosException("Observação deve ter no máximo 150 caracteres");
         }

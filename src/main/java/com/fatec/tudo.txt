@@ -1,0 +1,2568 @@
+package com.fatec.vagasFatec.repository;
+
+import com.fatec.vagasFatec.model.Enum.CursosEnum;
+import com.fatec.vagasFatec.model.Enum.StatusVaga;
+import com.fatec.vagasFatec.model.Vaga;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+import java.util.Optional;
+
+@Repository
+public interface Vagarepository extends JpaRepository <Vaga, Long>{
+    List<Vaga> findByEmpresa_Id (Long idEmpresa);
+    List<Vaga> findByStatusvaga (StatusVaga statusVaga);
+    List<Vaga> findByStatusvagaAndCursoVaga(StatusVaga statusVaga, CursosEnum cursosEnum);
+}
+package com.fatec.vagasFatec.repository;
+
+import com.fatec.vagasFatec.Dto.CandidaturaDTO.CandidaturaResponseDTO;
+import com.fatec.vagasFatec.model.Candidatura;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+import java.util.Optional;
+
+public interface CandidaturaRepository extends JpaRepository<Candidatura, Long> {
+
+    List<Candidatura> findByCandidatoId(Long candidatoId);
+    boolean existsByCandidatoIdAndVagaId(Long candidatoId, Long vagaId);
+    Optional<Candidatura> findByCandidato_IdAndVaga_Id(Long candidatoId, Long vagaId);
+    List<Candidatura> findByVaga_Id(Long idVaga);
+}
+package com.fatec.vagasFatec.repository;
+
+import com.fatec.vagasFatec.model.Candidato;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.Optional;
+
+public interface CandidatoRepository extends JpaRepository<Candidato, Long> {
+    boolean existsByEmailCandidato(String email);
+    boolean existsByRaAluno(String raAluno);
+    Optional<Candidato> findByRaAluno(String raAluno);
+    Optional<Candidato> findByEmailCandidato (String email);
+}
+package com.fatec.vagasFatec.repository;
+
+import com.fatec.vagasFatec.model.Empresa;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.Optional;
+
+public interface EmpresaRepository extends JpaRepository<Empresa, Long> {
+    Optional<Empresa> findByEmail (String email);
+}
+package com.fatec.vagasFatec.auth.model;
+
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.User;
+
+import java.util.Collection;
+
+public class CustomUserDetails extends User {
+    private final Long id;
+
+    public CustomUserDetails(Long id, String username, String password, Collection<? extends GrantedAuthority> authorities) {
+        super(username, password, authorities);
+        this.id = id;
+    }
+
+    public Long getId() {
+        return id;
+    }
+}package com.fatec.vagasFatec.auth.controller;
+
+public record LoginResponseDTO (
+        String token
+) {
+}
+package com.fatec.vagasFatec.auth.controller;
+
+import com.fatec.vagasFatec.auth.service.JwtService;
+import com.fatec.vagasFatec.exceptions.RegraDeNegocioVioladaException;
+import com.fatec.vagasFatec.model.Candidato;
+import com.fatec.vagasFatec.model.Empresa;
+import com.fatec.vagasFatec.model.Enum.StatusCandidato;
+import com.fatec.vagasFatec.repository.CandidatoRepository;
+import com.fatec.vagasFatec.repository.EmpresaRepository;
+import com.fatec.vagasFatec.utils.EmailSender;
+import com.fatec.vagasFatec.utils.VerificationCodeGenerator;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Optional;
+
+@RestController
+@RequestMapping("/api/auth")
+@RequiredArgsConstructor
+@Tag(name = "Autenticação", description = "Endpoints para login e geração de tokens de acesso (JWT)")
+public class AuthController {
+
+    private final AuthenticationManager authenticationManager;
+    private final JwtService jwtService;
+    private final CandidatoRepository candidatoRepository;
+    private final EmpresaRepository empresaRepository;
+    private final EmailSender enviarEmail;
+    private final VerificationCodeGenerator gerarCodigo;
+
+    @PostMapping("/login")
+    @Operation(summary = "Autenticar usuário", description = "Realiza o login de Candidatos ou Empresas, retornando um Bearer Token. Caso o candidato não esteja validado, um código será enviado por e-mail.")
+    @ApiResponse(responseCode = "200", description = "Login realizado com sucesso - Token gerado")
+    @ApiResponse(responseCode = "401", description = "Credenciais inválidas")
+    @ApiResponse(responseCode = "403", description = "Conta aguardando validação ou inativa")
+    public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginRequestDTO request) {
+        // Autentica primeiro (email + senha)
+        Authentication auth = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        request.email(),
+                        request.senha()
+                )
+        );
+
+        String email = auth.getName();  // email que foi autenticado com sucesso
+
+        // Tenta encontrar como Candidato
+        Optional<Candidato> optCandidato = candidatoRepository.findByEmailCandidato(email);
+
+        if (optCandidato.isPresent()) {
+            Candidato candidato = optCandidato.get();
+
+            // Validações específicas de candidato
+            if (candidato.getStatusCandidato() == StatusCandidato.AGUARDANDO) {
+                String codigo = gerarCodigo.gerarCodigoValidacao(candidato.getEmailCandidato());
+                enviarEmail.enviarEmail(
+                        candidato.getEmailCandidato(),
+                        "OLá, segue abaixo o código para validação de seu registro",
+                        codigo
+                );
+                throw new RegraDeNegocioVioladaException(
+                        "Favor validar sua conta. Verifique o e-mail: " +
+                                candidato.getEmailCandidato() + " e confirme o código"
+                );
+            }
+
+            if (candidato.getStatusCandidato() != StatusCandidato.ATIVO) {
+                throw new RegraDeNegocioVioladaException("Usuário Inativo");
+            }
+
+            // Gera token para candidato
+            String token = jwtService.generateToken(
+                    candidato.getId(),
+                    candidato.getEmailCandidato(),
+                    candidato.getRole().name()
+            );
+
+            return ResponseEntity.ok(new LoginResponseDTO(token));
+        }
+
+        // Se não é candidato → tenta Empresa
+        Optional<Empresa> optEmpresa = empresaRepository.findByEmail(email);
+
+        if (optEmpresa.isPresent()) {
+            Empresa empresa = optEmpresa.get();
+
+            // Gera token para empresa
+            String token = jwtService.generateToken(
+                    empresa.getId(),
+                    empresa.getEmail(),
+                    empresa.getRole().name()
+            );
+
+            return ResponseEntity.ok(new LoginResponseDTO(token));
+        }
+
+        // Caso raro: autenticou mas não achou em nenhum repositório
+        throw new RegraDeNegocioVioladaException("Usuário não encontrado");
+    }
+}package com.fatec.vagasFatec.auth.controller;
+
+public record LoginRequestDTO(
+        String email,
+        String senha
+) {
+}
+package com.fatec.vagasFatec.auth.service;
+
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
+
+import java.io.IOException;
+
+@Component
+@RequiredArgsConstructor
+public class JwtAuthenticationFilter extends OncePerRequestFilter {
+
+    private final JwtService jwtService;
+    private final CustomUserDetailsService userDetailsService;
+
+    @Override
+    protected void doFilterInternal(HttpServletRequest request,
+                                    HttpServletResponse response,
+                                    FilterChain filterChain)
+            throws ServletException, IOException {
+
+        String authHeader = request.getHeader("Authorization");
+
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        String token = authHeader.substring(7);
+
+        if (jwtService.isTokenValid(token)) {
+
+            String email = jwtService.extractAllClaims(token).get("email", String.class);
+
+            UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+
+            UsernamePasswordAuthenticationToken authToken =
+                    new UsernamePasswordAuthenticationToken(
+                            userDetails,
+                            null,
+                            userDetails.getAuthorities()
+                    );
+
+            SecurityContextHolder.getContext().setAuthentication(authToken);
+        }
+
+        filterChain.doFilter(request, response);
+    }
+}
+package com.fatec.vagasFatec.auth.service;
+
+import com.fatec.vagasFatec.auth.model.CustomUserDetails;
+import com.fatec.vagasFatec.exceptions.DadosNaoEncontrados;
+import com.fatec.vagasFatec.model.Candidato;
+import com.fatec.vagasFatec.model.Empresa;
+import com.fatec.vagasFatec.repository.CandidatoRepository;
+import com.fatec.vagasFatec.repository.EmpresaRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Optional;
+
+@Service
+@RequiredArgsConstructor
+public class CustomUserDetailsService implements UserDetailsService {
+
+    private final CandidatoRepository candidatoRepository;
+    private final EmpresaRepository empresaRepository;
+
+    @Override
+    public UserDetails loadUserByUsername(String email) throws DadosNaoEncontrados {
+
+        Optional<Candidato> candidato = candidatoRepository.findByEmailCandidato(email);
+        if (candidato.isPresent()) {
+            return buildUser(candidato.get().getId(), candidato.get().getEmailCandidato(), candidato.get().getSenha(), candidato.get().getRole().name());
+        }
+
+        Optional<Empresa> empresa = empresaRepository.findByEmail(email);
+        if (empresa.isPresent()) {
+            return buildUser(empresa.get().getId(), empresa.get().getEmail(), empresa.get().getSenha(), empresa.get().getRole().name());
+        }
+
+        throw new DadosNaoEncontrados("Usuário não encontrado");
+    }
+
+    private UserDetails buildUser(Long id, String email, String senha, String role) {
+        return new CustomUserDetails(
+                id,
+                email,
+                senha,
+                List.of(new SimpleGrantedAuthority(role))
+        );
+    }
+}
+package com.fatec.vagasFatec.auth.service;
+
+import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
+import io.swagger.v3.oas.annotations.security.SecurityScheme;
+import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+
+import java.util.List;
+
+@Configuration
+@RequiredArgsConstructor
+@SecurityScheme(name = SecurityConfig.SECURITY, type = SecuritySchemeType.HTTP,bearerFormat = "JWT", scheme = "bearer")
+public class SecurityConfig {
+
+    private final JwtAuthenticationFilter jwtAuthFilter;
+    private final CustomUserDetailsService userDetailsService;
+    public static final String SECURITY = "BearerAuth";
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+                .csrf(csrf -> csrf.disable())
+                .cors(cors -> cors.configurationSource(corsConfigurationSource())) // mantém seu CORS
+                .authorizeHttpRequests(auth -> auth
+
+                        // === Rotas públicas / sem autenticação ===
+                        .requestMatchers("/api/auth/**").permitAll()                          // login, register auth
+                        .requestMatchers(HttpMethod.POST, "/api/candidatos").permitAll()      // cadastro de candidato
+                        .requestMatchers(HttpMethod.POST, "/api/empresas").permitAll()        // cadastro de empresa
+                        .requestMatchers(HttpMethod.GET, "/api/vagas").permitAll()            // listar vagas abertas (público)
+                        .requestMatchers(HttpMethod.GET, "/api/vagas/**").permitAll()         // detalhes de vaga aberta (se existir)
+                        .requestMatchers(HttpMethod.POST, "/api/candidatos/validar").permitAll()
+
+                        // === Rotas de CANDIDATO (ações próprias) ===
+                        .requestMatchers("/api/candidatos/perfil").hasRole("CANDIDATO")
+                        .requestMatchers("/api/candidatos/perfil/curriculo").hasRole("CANDIDATO")
+                        .requestMatchers("/api/candidatos/perfil/curriculo/visualizar").permitAll() // Para testes, depois limitar para ROLE_CANDIDATO
+                        .requestMatchers("/api/candidaturas/minhas").hasRole("CANDIDATO")     // minhas candidaturas
+                        .requestMatchers(HttpMethod.POST, "/api/candidaturas/vaga/**").hasRole("CANDIDATO")   // se candidatar
+                        .requestMatchers(HttpMethod.PATCH, "/api/candidaturas/vaga/*/desistir").hasRole("CANDIDATO")
+                        .requestMatchers(HttpMethod.GET, "/api/candidaturas/vaga/minhas/*").hasRole("CANDIDATO")
+
+                        // === Rotas de EMPRESA (ações próprias) ===
+                        .requestMatchers(HttpMethod.POST, "/api/vagas").hasRole("EMPRESA")               // criar vaga
+                        .requestMatchers("/api/vagas/minhas").hasRole("EMPRESA")                         // minhas vagas
+                        .requestMatchers("/api/vagas/{id}/**").hasRole("EMPRESA")                        // editar, encerrar, reabrir, deletar vaga
+                        .requestMatchers("/api/candidaturas/{idCandidatura}/**").hasRole("EMPRESA")     // status, observação, etc.
+                        .requestMatchers("/perfil/curriculo/visualizar/{id_candidatura}/candidatura").hasRole("EMPRESA")
+                        // === Rotas administrativas (se você tiver ROLE_ADMIN no futuro) ===
+                        // .requestMatchers("/api/candidatos", "/api/empresas", "/api/candidaturas").hasRole("ADMIN")
+                        // .requestMatchers(HttpMethod.PATCH, "/api/candidatos/**/desativar").hasRole("ADMIN")
+
+                        // Swagger
+                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                        // Tudo o mais exige autenticação (fallback seguro)
+                        .anyRequest().authenticated()
+
+
+                )
+                .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authenticationProvider(authenticationProvider())
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+
+        return http.build();
+    }
+
+    @Bean
+    public AuthenticationProvider authenticationProvider() {
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService);
+        provider.setPasswordEncoder(passwordEncoder());
+        return provider;
+    }
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        return request -> {
+            CorsConfiguration config = new CorsConfiguration();
+            config.setAllowedOriginPatterns(List.of("*"));
+            config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+            config.setAllowedHeaders(List.of("*"));
+            config.setAllowCredentials(true);
+            return config;
+        };
+    }
+
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+        return config.getAuthenticationManager();
+    }
+}package com.fatec.vagasFatec.auth.service;
+
+import io.jsonwebtoken.*;
+import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+import java.security.Key;
+import java.util.Date;
+
+@Service
+public class JwtService {
+
+    @Value("${jwt.token}")
+    private String SECRET;
+    private final long EXPIRATION = 1000 * 60 * 30; // 30 minutos
+
+    private Key getSignKey() {
+        return Keys.hmacShaKeyFor(SECRET.getBytes());
+    }
+
+    public String generateToken(Long id, String email, String role) {
+        return Jwts.builder()
+                .setSubject(id.toString())
+                .claim("role", role)
+                .claim("email", email)
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION))
+                .signWith(getSignKey(), SignatureAlgorithm.HS256)
+                .compact();
+    }
+
+    public String extractId(String token) {
+        return extractAllClaims(token).getSubject();
+    }
+
+    public String extractRole(String token) {
+        return extractAllClaims(token).get("role", String.class);
+    }
+
+    public boolean isTokenValid(String token) {
+        try {
+            extractAllClaims(token);
+            return true;
+        } catch (JwtException e) {
+            return false;
+        }
+    }
+
+    Claims extractAllClaims(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(getSignKey())
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+    }
+}package com.fatec.vagasFatec;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableScheduling;
+
+@SpringBootApplication
+@EnableScheduling
+public class VagasFatecApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(VagasFatecApplication.class, args);
+	}
+
+	//Caso vier a dar problema de compilação por motivos não logicos como exmp: Adicionei uma coluna e não builda mais. Rodar um:
+	// docker compose down -v
+	// docker compose build --no-cache
+	// docker compose up
+}
+package com.fatec.vagasFatec.utils;
+
+import com.fatec.vagasFatec.exceptions.DadosInvalidosException;
+import com.fatec.vagasFatec.exceptions.DadosNaoEncontrados;
+import com.fatec.vagasFatec.model.Candidato;
+import com.fatec.vagasFatec.repository.CandidatoRepository;
+import jakarta.annotation.PostConstruct;
+import org.springframework.core.io.Resource;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.LocalDateTime;
+
+@RequiredArgsConstructor
+@Service
+public class ConverterCurriculo {
+
+    @Value("${app.upload.curriculos-dir}")
+    private String caminhoCurriculo;
+
+    @PostConstruct
+    public  void init(){
+        new File(caminhoCurriculo).mkdirs();
+    }
+
+    private  final CandidatoRepository candidatoRepository;
+
+
+    public void  salvarCurriculo(MultipartFile arquivo){
+        Long candidatoLogado = SecurityUtil.getCurrentUserId();
+
+        if (arquivo == null || arquivo.isEmpty()) {
+            throw new DadosInvalidosException("Nenhum arquivo de currículo enviado");
+        }
+
+        // Validação: só PDF e tamanho máximo (ex: 5MB)
+        if (!"application/pdf".equals(arquivo.getContentType())) {
+            throw new DadosInvalidosException("Apenas arquivos PDF são permitidos");
+        }
+        if (arquivo.getSize() > 5 * 1024 * 1024) { // 5MB
+            throw new DadosInvalidosException("Arquivo muito grande. Máximo 5MB");
+        }
+
+        String originalFilename = arquivo.getOriginalFilename();
+        String extensao = originalFilename != null && originalFilename.contains(".")
+                ? originalFilename.substring(originalFilename.lastIndexOf("."))
+                : ".pdf";
+
+        // Nome único + timestamp para evitar conflitos
+        String nomeUnico = candidatoLogado + "-" + System.currentTimeMillis() + extensao + originalFilename;
+        String caminhoCompleto = caminhoCurriculo + File.separator + nomeUnico;
+
+        Long candidatoId = SecurityUtil.getCurrentUserId();
+
+        Candidato candidato = candidatoRepository.findById(candidatoId)
+                .orElseThrow(() -> new DadosNaoEncontrados("Candidato não encontrado"));
+
+        // 2. FEATURE: Limpeza de arquivo antigo
+        if (candidato.getCaminhoCurriculo() != null) {
+            try {
+                String nomeArquivoAntigo = new java.io.File(candidato.getCaminhoCurriculo()).getName();
+
+                java.nio.file.Path pathAntigo = java.nio.file.Paths.get(caminhoCurriculo)
+                        .resolve(nomeArquivoAntigo)
+                        .normalize();
+
+                // Deleta se o arquivo realmente existir no disco
+                java.nio.file.Files.deleteIfExists(pathAntigo);
+                System.out.println("Arquivo antigo removido com sucesso: " + nomeArquivoAntigo);
+
+            } catch (IOException e) {
+                // Logamos o erro mas permitimos que o upload do novo continue
+                System.err.println("Aviso: Não foi possível deletar o arquivo antigo: " + e.getMessage());
+            }
+        }
+
+
+        try {
+            arquivo.transferTo(new File(caminhoCompleto));
+            candidato.setCaminhoCurriculo("/uploads/curriculos/" + nomeUnico);
+            candidato.setNomeCurriculo(originalFilename);
+            candidato.setDataAlteracaoCurriculo(LocalDateTime.now());
+
+            candidatoRepository.save(candidato);
+        } catch (IOException e) {
+            throw new DadosInvalidosException("Erro ao salvar o currículo: " + e.getMessage());
+        }
+    }
+
+
+
+    public ResponseEntity<Resource> visualizarCurriculo(String caminhoCompletoSalvoNoBanco) throws MalformedURLException {
+        if (caminhoCompletoSalvoNoBanco == null || !caminhoCompletoSalvoNoBanco.startsWith("/uploads/curriculos/")) {
+            throw new DadosInvalidosException("Caminho de currículo inválido");
+        }
+
+        // Extrai apenas o nome do arquivo (parte final)
+        String nomeArquivo = caminhoCompletoSalvoNoBanco.substring(caminhoCompletoSalvoNoBanco.lastIndexOf("/") + 1);
+
+        Path arquivoPath = Paths.get(caminhoCurriculo).resolve(nomeArquivo).normalize();
+
+        // Importante: impede path traversal
+        if (!arquivoPath.startsWith(Paths.get(caminhoCurriculo).normalize())) {
+            throw new DadosInvalidosException("Caminho inválido (tentativa de traversal)");
+        }
+
+        UrlResource resource = new UrlResource(arquivoPath.toUri());
+
+        if (!resource.exists() || !resource.isReadable()) {
+            throw new DadosNaoEncontrados("Currículo não encontrado");
+        }
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
+                .body(resource);
+    }
+}
+package com.fatec.vagasFatec.utils;
+
+import com.fatec.vagasFatec.repository.CandidatoRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Bean;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDate;
+
+@Service
+@RequiredArgsConstructor
+//Observação, nunca utilizar o nome da classe como "MailSender", se não da erro, ok Ryan do futuro?
+public class EmailSender {
+
+    private final JavaMailSender mailSender;
+    private final String remetente = "contato@voluntariosdasaude.com.br";
+
+
+    public void enviarEmail(String destinatario, String assunto, String corpo){
+
+        SimpleMailMessage mailMessage = new SimpleMailMessage();
+
+        mailMessage.setFrom(remetente);
+        mailMessage.setTo(destinatario);
+        mailMessage.setSubject(assunto);
+        mailMessage.setText(corpo);
+
+        mailSender.send(mailMessage);
+    }
+}
+package com.fatec.vagasFatec.utils;
+
+import com.fatec.vagasFatec.Dto.CandidatoDTO.ValidarCandidatoDTO;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+@RequiredArgsConstructor
+@RestController
+@RequestMapping("/api/candidatos/validar")
+public class ValidarCodigoController {
+    private final VerificationCodeGenerator verificationCodeGenerator;
+
+    @PostMapping
+    public ResponseEntity<Void> validarCodigo(@RequestBody ValidarCandidatoDTO c){
+        verificationCodeGenerator.validarCodigo(c);
+        return ResponseEntity.noContent().build();
+
+    }
+
+    @PostMapping("/reenviar")
+    public ResponseEntity<Void> reenviarCodigo(String email){
+        verificationCodeGenerator.gerarCodigoValidacao(email);
+        return ResponseEntity.noContent().build();
+    }
+}
+package com.fatec.vagasFatec.utils;
+
+import com.fatec.vagasFatec.auth.model.CustomUserDetails;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+
+public class SecurityUtil {
+
+    public static Long getCurrentUserId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new RuntimeException("Nenhum usuário autenticado na requisição atual");
+        }
+
+        Object principal = authentication.getPrincipal();
+
+        // Tipo correto: CustomUserDetails (não o Service!)
+        if (principal instanceof CustomUserDetails userDetails) {
+            return userDetails.getId();
+        }
+
+        // Fallback (se por algum motivo ainda usar o User padrão)
+        if (principal instanceof UserDetails) {
+            throw new RuntimeException("Usuário autenticado sem ID disponível. Certifique-se de usar CustomUserDetails.");
+        }
+
+        throw new RuntimeException("Tipo de principal não suportado: " + principal.getClass().getName());
+    }
+
+    public static String getCurrentUserEmail() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof UserDetails userDetails) {
+            return userDetails.getUsername();
+        }
+        throw new RuntimeException("Nenhum usuário autenticado");
+    }
+}package com.fatec.vagasFatec.utils;
+
+import com.fatec.vagasFatec.Dto.CandidatoDTO.ValidarCandidatoDTO;
+import com.fatec.vagasFatec.exceptions.DadosInvalidosException;
+import com.fatec.vagasFatec.exceptions.DadosNaoEncontrados;
+import com.fatec.vagasFatec.model.Candidato;
+import com.fatec.vagasFatec.model.Enum.StatusCandidato;
+import com.fatec.vagasFatec.repository.CandidatoRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.security.SecureRandom;
+import java.time.LocalDateTime;
+
+@Service
+//Sempre colocar uma anotação de @Service, nestas classes que precisam mexer com componentes, e se aonde você for usar tiver uma anotation do Lombok sem service ele cai
+public class VerificationCodeGenerator {
+
+    public static final String CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    public static final SecureRandom RANDOM = new SecureRandom();
+    public static final int CODE_LENGHT = 6;
+    @Autowired
+    private CandidatoRepository candidatoRepository;
+
+
+    public  String gerarCodigoValidacao(String email){
+        StringBuilder stringBuilder = new StringBuilder(CODE_LENGHT);
+        Candidato candidato = candidatoRepository.findByEmailCandidato(email).orElseThrow(() -> new DadosNaoEncontrados("Candidato nao encontrado"));
+
+        for (int i = 0; i < CODE_LENGHT; i++){
+            int index = RANDOM.nextInt(CHARS.length());
+            stringBuilder.append(CHARS.charAt(index));
+
+        }
+        System.out.println(stringBuilder.toString());
+        candidato.setToken(stringBuilder.toString());
+        candidato.setCreatedAt(LocalDateTime.now());
+        candidato.setExpiresAt(candidato.getCreatedAt().plusMinutes(2));
+        candidatoRepository.save(candidato);
+        return stringBuilder.toString();
+    }
+
+
+
+    public String validarCodigo(ValidarCandidatoDTO validarCandidatoDTO){
+        Candidato candidato = candidatoRepository.findByEmailCandidato(validarCandidatoDTO.email()).orElseThrow(() -> new DadosNaoEncontrados("Candidato nao encontrado"));
+
+        if(!validarCandidatoDTO.codigoEmail().equals(candidato.getToken())){
+            throw new DadosInvalidosException("Token está errado");
+        }
+        if (LocalDateTime.now().isAfter(candidato.getExpiresAt())) {
+            throw new DadosInvalidosException("Código expirado. Solicite um novo.");
+        }
+        if (candidato.getToken() == null) {
+            throw new DadosInvalidosException("Nenhum código de validação pendente");
+        }
+        candidato.setStatusCandidato(StatusCandidato.ATIVO);
+        candidatoRepository.save(candidato);
+        return "Candidato ativado";
+
+
+    }
+}
+package com.fatec.vagasFatec.utils;
+
+import com.fatec.vagasFatec.model.Enum.StatusVaga;
+import com.fatec.vagasFatec.model.Vaga;
+import com.fatec.vagasFatec.repository.Vagarepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Component
+@RequiredArgsConstructor
+public class VagaEncerramentoScheduler {
+    private final Vagarepository vagarepository;
+
+    @Scheduled(fixedRate = 60000)
+    public void encerrarVagasAutomaticamente(){
+        List<Vaga> vagas = vagarepository.findByStatusvaga(StatusVaga.ABERTA);
+
+        for(Vaga vaga: vagas){
+            if (vaga.getDataEncerramento() != null && vaga.getDataEncerramento().isBefore(LocalDateTime.now())){
+                vaga.setStatusvaga(StatusVaga.ENCERRADA);
+                vagarepository.save(vaga);
+            }
+        }
+    }
+}
+package com.fatec.vagasFatec.model;
+
+import com.fatec.vagasFatec.model.Enum.StatusCandidatura;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "candidaturas",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"candidato_id", "vaga_id"}))
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class Candidatura {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @NotNull(message = "Erro: O candidato é obrigatório para realizar a inscrição")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "candidato_id", nullable = false)
+    private Candidato candidato;
+
+    @NotNull(message = "Erro: A vaga é obrigatória para realizar a inscrição")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "vaga_id", nullable = false)
+    private Vaga vaga;
+
+    @NotNull(message = "Erro: O status da candidatura deve ser informado")
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private StatusCandidatura status;
+
+    @Column(nullable = false)
+    private LocalDateTime dataInscricao;
+
+    //Campo opcional, empres ausa se quiser
+    @Column(columnDefinition = "TEXT")
+    private String observacaoEmpresa;
+
+    @PrePersist
+    public void prePersist() {
+        if (status == null) {
+            status = StatusCandidatura.ENVIADO;
+        }
+        if (dataInscricao == null) {
+            dataInscricao = LocalDateTime.now();
+        }
+    }
+}package com.fatec.vagasFatec.model;
+
+import com.fatec.vagasFatec.model.Enum.Role;
+import com.fatec.vagasFatec.model.Enum.StatusCandidato;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PastOrPresent;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+@Entity
+@AllArgsConstructor
+@NoArgsConstructor
+@Getter
+@Setter
+@Table(name = "candidatos")
+public class Candidato {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @NotBlank(message = "Erro: O nome completo é obrigatório")
+    @Column(name = "nome_completo", nullable = false)
+    private String nomeCompleto;
+
+    @NotBlank(message = "Erro: O RA do aluno é obrigatório")
+    @Column(name = "ra_candidato", unique = true, nullable = false)
+    private String raAluno;
+
+    @NotBlank(message = "Erro: O e-mail é obrigatório")
+    @Email(message = "Erro: O formato do e-mail é inválido")
+    @Column(name = "email", unique = true, nullable = false)
+    private String emailCandidato;
+
+    @NotBlank(message = "Erro: A senha é obrigatória")
+    @Column(name = "senha_candidato", nullable = false)
+    private String senha;
+
+    @Column(name = "role")
+    @Enumerated(EnumType.STRING)
+    private Role role;
+
+    @PastOrPresent(message = "Erro: A data de nascimento não pode ser uma data futura")
+    @Column(name = "data_nascimento")
+    private LocalDate dataNascimento;
+
+    @Column(name = "telefone")
+    private String telefone;
+
+    @Column(name = "cidade")
+    private String cidade;
+
+    @Column(name = "link_linkedin", columnDefinition = "TEXT")
+    private String linkLinkedin;
+
+    @Column(name = "link_github", columnDefinition = "TEXT")
+    private String linkGithub;
+
+    @Column(name = "bio_candidato", columnDefinition = "TEXT")
+    private String bioCandidato;
+
+    @Column(name = "status_candidato")
+    @Enumerated(EnumType.STRING)
+    private StatusCandidato statusCandidato;
+
+    @Column(name = "data_cadastro")
+    private LocalDateTime dataCadastro;
+
+    @Column(name = "curriculo_path")
+    private String caminhoCurriculo;
+
+    @Column(name = "curriculo_nome")
+    private String nomeCurriculo;
+
+    @Column(name = "data_alteracao_curriculo")
+    private LocalDateTime dataAlteracaoCurriculo;
+
+    //------------------------------------------------------------
+    @Column(name = "token", nullable = true, unique = true)
+    private String token;
+
+
+    @Column(name = "created_at", nullable = true)
+    private LocalDateTime createdAt;
+
+    @Column(name = "expires_at", nullable = true)
+    private LocalDateTime expiresAt;
+
+    @PrePersist
+    public void prePersist(){
+        statusCandidato = StatusCandidato.AGUARDANDO;
+        dataCadastro = LocalDateTime.now();
+        role = Role.ROLE_CANDIDATO;
+    }
+}package com.fatec.vagasFatec.model.Enum;
+
+public enum StatusEmpresa {
+    ATIVO,
+    INATIVO,
+    AGUARDANDO
+}
+package com.fatec.vagasFatec.model.Enum;
+
+public enum Role {
+    ROLE_EMPRESA,
+    ROLE_CANDIDATO,
+    ROLE_ADMIN
+}
+package com.fatec.vagasFatec.model.Enum;
+
+public enum StatusCandidatura {
+   ENVIADO,
+    EM_ANALISE,
+    APROVADO,
+    REJEITADO,
+    DESISTIU
+}
+package com.fatec.vagasFatec.model.Enum;
+
+public enum CursosEnum {
+    ADS,
+    GRH,
+    GPI,
+    DSM
+}
+package com.fatec.vagasFatec.model.Enum;
+
+public enum StatusCandidato {
+    ATIVO,
+    INATIVO,
+    AGUARDANDO
+}
+package com.fatec.vagasFatec.model.Enum;
+
+public enum StatusVaga {
+    ABERTA,
+    ENCERRADA,
+    PAUSADA, //Exclusivo de admin
+    ANALISE //Exclusivo de admin
+}
+package com.fatec.vagasFatec.model.Enum;
+
+public enum TipoVagaEnum {
+    ESTAGIO,
+    CLT,
+    PJ,
+    FREELANCE
+}
+package com.fatec.vagasFatec.model.Enum;
+
+public enum ModalidadeVagaEnum {
+    PRESENCIAL,
+    REMOTO,
+    HIBRIDO
+}
+package com.fatec.vagasFatec.model;
+
+import com.fatec.vagasFatec.model.Enum.Role;
+import com.fatec.vagasFatec.model.Enum.StatusEmpresa;
+import com.fatec.vagasFatec.model.Enum.StatusVaga;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import lombok.*;
+import org.hibernate.validator.constraints.br.CNPJ;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+@AllArgsConstructor
+@NoArgsConstructor
+@Getter
+@Setter
+@Entity
+@Table(name = "empresas")
+public class Empresa {
+
+    //Dados cadastrais das empresas que irão participar da paltaforma
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @NotBlank(message = "Erro: Razão social é obrigatorio")
+    @Column(name = "razao_social")
+    private String razaoSocial;
+
+    @NotBlank(message = "Erro: Nome fantasia é orbigatorio")
+    @Column(name = "nome_fantasia")
+    private String nomeFantasia;
+
+    @NotBlank(message = "Erro: E-mail é orbigatorio")
+    @Email
+    @Column(name = "email_empresa", unique = true)
+    private String email;
+
+    @Column(name = "cnpj", unique = true)
+    @CNPJ(message = "CNPJ INVALIDO")
+    private String cnpj;
+
+    @NotBlank(message = "Erro: A senha é obrigatória")
+    @Column(name = "senha_empresa", nullable = false)
+    private String senha;
+
+    @Column(name = "role")
+    @Enumerated(EnumType.STRING)
+    private Role role;
+
+    @NotBlank(message = "Erro: telefone é obrigatorio")
+    @Column(name = "telefone")
+    private String telefone;
+
+    @NotNull(message = "Erro: Status é obrigatorio")
+    @Column(name = "status_empresa")
+    @Enumerated(EnumType.STRING)
+    private StatusEmpresa statusEmpresa;
+
+    // Uma empresa pode ter várias vagas
+    @OneToMany(mappedBy = "empresa")
+    private List<Vaga> vagas;
+
+    //------------------------------------------------------------
+    @Column(name = "token", nullable = true, unique = true)
+    private String token;
+
+
+    @Column(name = "created_at", nullable = true)
+    private LocalDateTime createdAt;
+
+    @Column(name = "expires_at", nullable = true)
+    private LocalDateTime expiresAt;
+
+    @PrePersist
+    public void prePersist(){
+       statusEmpresa = StatusEmpresa.ATIVO;
+       role =Role.ROLE_EMPRESA;
+    }
+}package com.fatec.vagasFatec.model;
+
+import com.fatec.vagasFatec.model.Enum.CursosEnum;
+import com.fatec.vagasFatec.model.Enum.ModalidadeVagaEnum;
+import com.fatec.vagasFatec.model.Enum.StatusVaga;
+import com.fatec.vagasFatec.model.Enum.TipoVagaEnum;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PositiveOrZero;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import java.time.LocalDateTime;
+
+@AllArgsConstructor
+@NoArgsConstructor
+@Getter
+@Setter
+@Entity
+@Table(name = "vagas")
+public class Vaga {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "empresa_id", nullable = false)
+    private Empresa empresa;
+
+    @NotBlank(message = "Erro: É obrigatório um título para a vaga")
+    @Column(name = "tituloVaga")
+    private String tituloVaga;
+
+    @NotBlank(message = "Erro: É obrigatório uma descrição para a vaga")
+    @Column(columnDefinition = "TEXT")
+    private String descricaoVaga;
+
+    @NotNull(message = "Erro: O curso da vaga deve ser selecionado")
+    @Enumerated(EnumType.STRING)
+    @Column(name = "cursoVaga")
+    private CursosEnum cursoVaga;
+
+    @NotNull(message = "Erro: O tipo da vaga (Estágio/CLT/etc) é obrigatório")
+    @Column(name = "tipoVaga")
+    @Enumerated(EnumType.STRING)
+    private TipoVagaEnum tipoVagaEnum;
+
+    @NotNull(message = "Erro: A modalidade (Presencial/Remoto) é obrigatória")
+    @Column(name = "modalidade_vaga")
+    @Enumerated(EnumType.STRING)
+    private ModalidadeVagaEnum modalidadeVaga;
+
+    @NotBlank(message = "Erro: A cidade da vaga é obrigatória")
+    @Column(name = "cidade")
+    private String cidadeVaga;
+
+    @NotNull(message = "Erro: O valor da bolsa auxílio deve ser informado")
+    @PositiveOrZero(message = "Erro: O valor da bolsa não pode ser negativo")
+    @Column(name = "bolsa")
+    private Double bolsaAuxilio;
+
+    @Column(name = "dataPublicacaoVaga")
+    private LocalDateTime dataPublicacaoVaga;
+
+    @Column(name = "data_encerramento")
+    private LocalDateTime dataEncerramento;
+
+
+    @Column(name = "statusVaga")
+    @Enumerated(EnumType.STRING)
+    private StatusVaga statusvaga;
+
+    @PrePersist
+    public void prePersist(){
+        dataPublicacaoVaga = LocalDateTime.now();
+        statusvaga = StatusVaga.ABERTA;
+    }
+}package com.fatec.vagasFatec.Dto.EmpresaDTO;
+
+public record EmpresaAtualizarDTO(
+        String razaoSocial,
+        String nomeFantasia,
+        String email,
+        String cnpj,
+        String telefone
+) {
+}
+package com.fatec.vagasFatec.Dto.EmpresaDTO;
+
+
+import com.fatec.vagasFatec.model.Enum.StatusEmpresa;
+
+public record EmpresaResponseDTO(
+        Long id,
+        String razaoSocial,
+        String nomeFantasia,
+        String email,
+        String cnpj,
+        String telefone,
+        StatusEmpresa statusEmpresa
+
+) {}
+package com.fatec.vagasFatec.Dto.EmpresaDTO;
+
+import com.fatec.vagasFatec.model.Enum.StatusEmpresa;
+
+public record EmpreRequestDTO(
+        String razaoSocial,
+        String nomeFantasia,
+        String email,
+        String senha,
+        String cnpj,
+        String telefone
+) {
+}
+package com.fatec.vagasFatec.Dto.CandidaturaDTO;
+
+public record CandidaturaObservacaoDTO(
+        String observacaoCandidatura
+) {
+}
+package com.fatec.vagasFatec.Dto.CandidaturaDTO;
+
+import com.fatec.vagasFatec.model.Enum.StatusCandidatura;
+
+import java.time.LocalDateTime;
+
+public record CandidaturaResponseDTO(
+        Long id,
+        Long candidatoId,
+        Long vagaId,
+        String tituloVaga,
+        String empresaNome,
+        StatusCandidatura status,
+        String observacaoEmpresa,
+        LocalDateTime dataInscricao
+) {}package com.fatec.vagasFatec.Dto.VagaDto;
+
+import com.fatec.vagasFatec.model.Enum.CursosEnum;
+import com.fatec.vagasFatec.model.Enum.ModalidadeVagaEnum;
+import com.fatec.vagasFatec.model.Enum.StatusVaga;
+import com.fatec.vagasFatec.model.Enum.TipoVagaEnum;
+
+import java.time.LocalDateTime;
+
+public record VagaUpdateDTO(
+
+        String tituloVaga,
+        String descricaoVaga,
+        CursosEnum cursoVaga,
+        TipoVagaEnum tipoVaga,
+        ModalidadeVagaEnum modalidadeVaga,
+        String cidadeVaga,
+        Double bolsaAuxilio,
+        LocalDateTime dataEncerramento
+) {
+}
+package com.fatec.vagasFatec.Dto.VagaDto;
+
+import com.fatec.vagasFatec.model.Enum.CursosEnum;
+import com.fatec.vagasFatec.model.Enum.ModalidadeVagaEnum;
+import com.fatec.vagasFatec.model.Enum.StatusVaga;
+import com.fatec.vagasFatec.model.Enum.TipoVagaEnum;
+import java.time.LocalDateTime;
+
+
+public record VagasResponseDTO (
+
+        Long id,
+     Long id_empresa,
+     String tituloVaga,
+     String descricaoVaga,
+     CursosEnum cursoVaga,
+     TipoVagaEnum tipoVaga,
+     ModalidadeVagaEnum modalidadeVaga,
+     String nomeEmpresa,
+     String cidadeVaga,
+     Double bolsaAuxilio,
+     LocalDateTime dataPublicacaoVaga,
+     LocalDateTime dataEncerramento,
+     StatusVaga statusVaga
+    ){
+}
+package com.fatec.vagasFatec.Dto.CandidatoDTO;
+
+public record CandidatoCadastroDTO(
+        String nomeCompleto,
+        String raAluno,
+        String emailCandidato,
+        String senha
+) {
+}
+package com.fatec.vagasFatec.Dto.CandidatoDTO;
+
+import org.springframework.web.multipart.MultipartFile;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+public record CandidatoAtualizarPerfilDTo(
+        String telefone,
+        String cidade,
+        String linkedin,
+        String  github,
+        String bio,
+        LocalDate dataNascimento,
+        MultipartFile curriculo
+) {
+}
+package com.fatec.vagasFatec.Dto.CandidatoDTO;
+
+import com.fatec.vagasFatec.model.Enum.StatusCandidato;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+public record CandidatoResponseDTO(
+
+        Long id,
+        String nomeCompleto,
+        String raAluno,
+        String emailCandidato,
+        LocalDate dataNascimento,
+        String telefone,
+        String cidade,
+        String linkLinkedin,
+        String linkGithub,
+        String bioCandidato,
+        StatusCandidato statusCandidato,
+        String caminhoCurriculo,
+        String nomeCurriculo
+) {
+}
+package com.fatec.vagasFatec.Dto.CandidatoDTO;
+
+public record ValidarCandidatoDTO(
+        String email,
+        String codigoEmail
+) {
+}
+package com.fatec.vagasFatec.exceptions;
+
+public class RegraDeNegocioVioladaException extends  RuntimeException{
+    public RegraDeNegocioVioladaException(){
+        super("Regra de negocio violada ou inativa");
+    }
+
+    public RegraDeNegocioVioladaException(String msg){
+        super(msg);
+    }
+}
+package com.fatec.vagasFatec.exceptions;
+
+public class TokenInvalidoJwtException extends RuntimeException{
+    public TokenInvalidoJwtException(){
+        super("Token invalido ou violado");
+    }
+    public TokenInvalidoJwtException(String msg){
+        super(msg);
+    }
+}
+package com.fatec.vagasFatec.exceptions;
+
+public class EntidadeJaExistenteException extends RuntimeException{
+    public EntidadeJaExistenteException(){
+        super("Entidade já existente");
+    }
+
+    public EntidadeJaExistenteException(String msg){
+        super(msg);
+    }
+}
+package com.fatec.vagasFatec.exceptions;
+
+public class DadosInvalidosException extends RuntimeException{
+    public DadosInvalidosException(){
+        super("Dados invalidos ou faltantes");
+    }
+
+    public DadosInvalidosException (String msg){
+        super(msg);
+    }
+}
+package com.fatec.vagasFatec.exceptions;
+
+public class DadosNaoEncontrados extends RuntimeException{
+    public DadosNaoEncontrados(){
+        super("Dados não encontrados");
+    }
+
+    public DadosNaoEncontrados(String msg){
+        super(msg);
+    }
+}
+package com.fatec.vagasFatec.exceptions;
+
+public class OperacaoNaoPermitidaException extends RuntimeException{
+    public OperacaoNaoPermitidaException(){
+        super("Operação não permitida ou inválida");
+    }
+
+    public OperacaoNaoPermitidaException(String msg){
+        super(msg);
+    }
+}
+package com.fatec.vagasFatec.controller;
+
+import com.fatec.vagasFatec.Dto.CandidaturaDTO.CandidaturaObservacaoDTO;
+import com.fatec.vagasFatec.Dto.CandidaturaDTO.CandidaturaResponseDTO;
+import com.fatec.vagasFatec.model.Candidatura;
+import com.fatec.vagasFatec.model.Enum.StatusCandidatura;
+import com.fatec.vagasFatec.service.CandidaturaService;
+import com.fatec.vagasFatec.utils.SecurityUtil;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RequiredArgsConstructor
+@RestController
+@RequestMapping("/api/candidaturas")
+@Tag(name = "Candidatura", description = "Gerenciamento de aplicações em vagas, histórico e status")
+public class CandidaturaController {
+    private final CandidaturaService candidaturaService;
+
+    @PostMapping("/vaga/{id_vaga}")
+    @Operation(summary = "Aplicar para uma vaga", description = "Cria uma nova candidatura para o aluno autenticado na vaga especificada.")
+    @ApiResponse(responseCode = "201", description = "Candidatura realizada com sucesso")
+    @ApiResponse(responseCode = "400", description = "Candidatura duplicada ou vaga inexistente")
+    public ResponseEntity<CandidaturaResponseDTO> criarCandidatura (@PathVariable @Valid Long id_vaga){
+        Long candidatoLogado = SecurityUtil.getCurrentUserId();
+        CandidaturaResponseDTO dto = candidaturaService.criarCandidatura(candidatoLogado, id_vaga);
+        return ResponseEntity.status(HttpStatus.CREATED).body(dto);
+    }
+
+    @GetMapping
+    @Operation(summary = "Listar todas as candidaturas (Admin)", description = "Retorna o histórico global de candidaturas do sistema. Requer ROLE_ADMIN.")
+    @ApiResponse(responseCode = "200", description = "Lista recuperada com sucesso")
+    public ResponseEntity<List<CandidaturaResponseDTO>> listarTodasAsCandidaturas(){
+        List<CandidaturaResponseDTO> candidaturaResponseDTOS = candidaturaService.listarTodasCandidaturas();
+        return ResponseEntity.ok().body(candidaturaResponseDTOS);
+    }
+
+    @GetMapping("/minhas")
+    @Operation(summary = "Ver minhas candidaturas", description = "Retorna todas as candidaturas realizadas pelo aluno autenticado.")
+    @ApiResponse(responseCode = "200", description = "Lista de candidaturas do aluno retornada")
+    public ResponseEntity<List<CandidaturaResponseDTO>> listarVagasDoCandidato(){
+        Long candidatoLogado = SecurityUtil.getCurrentUserId();
+        List<CandidaturaResponseDTO> lista = candidaturaService.listarTodasCandidaturasAluno(candidatoLogado);
+        return ResponseEntity.ok().body(lista);
+    }
+
+    @PatchMapping("/vaga/{vagaId}/desistir")
+    @Operation(summary = "Desistir de candidatura", description = "Permite ao candidato cancelar sua participação no processo seletivo de uma vaga.")
+    @ApiResponse(responseCode = "200", description = "Desistência processada com sucesso")
+    public ResponseEntity<Void> desistirVaga(@PathVariable @Valid Long vagaId){
+        Long candidatoLogado = SecurityUtil.getCurrentUserId();
+        candidaturaService.desistirCandidatura(candidatoLogado, vagaId);
+        return ResponseEntity.ok().build();
+    }
+
+    @PatchMapping("/empresa/candidatura/{id_candidatura}/novo_status")
+    @Operation(summary = "Alterar status da candidatura", description = "Permite à empresa atualizar o status (Ex: Em análise, Aprovado, Rejeitado).")
+    @ApiResponse(responseCode = "200", description = "Status atualizado com sucesso")
+    @ApiResponse(responseCode = "403", description = "Acesso negado: Empresa não é dona da vaga")
+    public ResponseEntity<Void> alterarStatusCandidatura(@PathVariable @Valid Long id_candidatura, @RequestParam @Valid StatusCandidatura status){
+        Long empresaLogada = SecurityUtil.getCurrentUserId();
+        candidaturaService.alterarStatusCandidatura(id_candidatura, empresaLogada, status);
+        return ResponseEntity.ok().build();
+    }
+
+    @PatchMapping("empresa/candidatura/{id_candidatura}/observacoes")
+    @Operation(summary = "Adicionar observações internas", description = "Permite à empresa adicionar comentários sobre o candidato para controle interno.")
+    @ApiResponse(responseCode = "204", description = "Observação adicionada com sucesso")
+    public ResponseEntity<Void> adicionarObservacaoCandidatura(@PathVariable @Valid Long id_candidatura, @RequestBody @Valid CandidaturaObservacaoDTO observacaoDTO){
+        Long candidatoLogado = SecurityUtil.getCurrentUserId();
+        candidaturaService.adicionarComentariosCandidatura(candidatoLogado, id_candidatura, observacaoDTO);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/empresa/vaga/{idVaga}/candidaturas_vaga")
+    @Operation(summary = "Listar candidatos por vaga", description = "Retorna todos os candidatos inscritos em uma vaga específica da empresa.")
+    @ApiResponse(responseCode = "200", description = "Lista de inscritos retornada")
+    public ResponseEntity<List<CandidaturaResponseDTO>> listarPorVaga(
+            @PathVariable @Valid Long idVaga
+    ) {
+        Long candidatoLogado = SecurityUtil.getCurrentUserId();
+        return ResponseEntity.ok(
+                candidaturaService.listarCandidaturasPorVaga(idVaga, candidatoLogado)
+        );
+    }
+}package com.fatec.vagasFatec.controller;
+
+import com.fatec.vagasFatec.Dto.EmpresaDTO.EmpreRequestDTO;
+import com.fatec.vagasFatec.Dto.EmpresaDTO.EmpresaAtualizarDTO;
+import com.fatec.vagasFatec.Dto.EmpresaDTO.EmpresaResponseDTO;
+import com.fatec.vagasFatec.model.Empresa;
+import com.fatec.vagasFatec.service.EmpresaService;
+import com.fatec.vagasFatec.utils.SecurityUtil;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/empresas")
+@RequiredArgsConstructor
+@Tag(name = "Empresa", description = "Endpoints para gestão de empresas e seus perfis corporativos")
+public class EmpresaController {
+
+    private final EmpresaService empresaService;
+
+    @PostMapping
+    @Operation(summary = "Cadastrar nova empresa", description = "Realiza o cadastro de uma nova organização no sistema. Acesso público.")
+    @ApiResponse(responseCode = "201", description = "Empresa cadastrada com sucesso")
+    @ApiResponse(responseCode = "400", description = "Dados inválidos ou CNPJ já cadastrado")
+    public ResponseEntity<EmpresaResponseDTO> criarEmpresa(@RequestBody @Valid EmpreRequestDTO empresa) {
+        EmpresaResponseDTO response = empresaService.criarEmpresa(empresa);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @GetMapping
+    @Operation(summary = "Listar todas as empresas (Admin)", description = "Retorna a listagem completa de empresas parceiras. Requer ROLE_ADMIN.")
+    @ApiResponse(responseCode = "200", description = "Lista recuperada com sucesso")
+    @ApiResponse(responseCode = "403", description = "Acesso negado")
+    public ResponseEntity<List<EmpresaResponseDTO>> listarEmpresas() {
+        return ResponseEntity.ok(empresaService.listarEmpresas());
+    }
+
+    @PatchMapping("/perfil")
+    @Operation(summary = "Atualizar dados da empresa", description = "Permite que a empresa autenticada atualize suas informações de perfil.")
+    @ApiResponse(responseCode = "200", description = "Dados atualizados com sucesso")
+    public ResponseEntity<EmpresaResponseDTO> atualizarDadosEmpresa(@RequestBody EmpresaAtualizarDTO dados){
+        Long empresaLogada = SecurityUtil.getCurrentUserId();
+        EmpresaResponseDTO dadosAtt = empresaService.atualizarDadosEmpresa(dados, empresaLogada);
+        return ResponseEntity.ok(dadosAtt);
+    }
+}package com.fatec.vagasFatec.controller;
+
+import com.fatec.vagasFatec.Dto.CandidatoDTO.CandidatoAtualizarPerfilDTo;
+import com.fatec.vagasFatec.Dto.CandidatoDTO.CandidatoCadastroDTO;
+import com.fatec.vagasFatec.Dto.CandidatoDTO.CandidatoResponseDTO;
+import com.fatec.vagasFatec.auth.service.SecurityConfig;
+import com.fatec.vagasFatec.exceptions.DadosNaoEncontrados;
+import com.fatec.vagasFatec.exceptions.RegraDeNegocioVioladaException;
+import com.fatec.vagasFatec.model.Candidato;
+import com.fatec.vagasFatec.model.Candidatura;
+import com.fatec.vagasFatec.model.Empresa;
+import com.fatec.vagasFatec.repository.CandidatoRepository;
+import com.fatec.vagasFatec.repository.CandidaturaRepository;
+import com.fatec.vagasFatec.repository.EmpresaRepository;
+import com.fatec.vagasFatec.service.CandidatoService;
+import com.fatec.vagasFatec.utils.ConverterCurriculo;
+import com.fatec.vagasFatec.utils.SecurityUtil;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.core.io.Resource;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.net.MalformedURLException;
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/candidatos")
+@RequiredArgsConstructor
+@SecurityRequirement(name = SecurityConfig.SECURITY)
+@Tag(name = "Candidato", description = "Endpoints para gestão de perfis, currículos e administração de candidatos")
+public class CandidatoController {
+
+    private final CandidatoService candidatoService;
+    private final ConverterCurriculo converterCurriculo;
+    private final CandidatoRepository candidatoRepository;
+    private final EmpresaRepository empresaRepository;
+    private final CandidaturaRepository candidaturaRepository;
+
+    @PostMapping
+    @Operation(summary = "Realizar cadastro inicial", description = "Cria um novo registro de candidato/aluno no sistema. Acesso público.")
+    @ApiResponse(responseCode = "201", description = "Candidato registrado com sucesso")
+    @ApiResponse(responseCode = "400", description = "Requisição inválida ou candidato já existente")
+    @ApiResponse(responseCode = "500", description = "Erro interno no servidor")
+    public ResponseEntity<CandidatoResponseDTO> cadastroInicial (@RequestBody @Valid CandidatoCadastroDTO cadastroDTO){
+        CandidatoResponseDTO candidatoResponseDTO = candidatoService.criarCandidato(cadastroDTO);
+        return ResponseEntity.status(HttpStatus.CREATED).body(candidatoResponseDTO);
+    }
+
+    @GetMapping
+    @Operation(summary = "Listar todos os candidatos", description = "Retorna uma lista de todos os candidatos cadastrados. Requer privilégios de Administrador.")
+    @ApiResponse(responseCode = "200", description = "Lista recuperada com sucesso")
+    @ApiResponse(responseCode = "403", description = "Acesso negado - Permissão insuficiente")
+    public ResponseEntity<List<CandidatoResponseDTO>> listarTodoscandidatos (){
+        List<CandidatoResponseDTO> responseEntities = candidatoService.listarTodosCandidatos();
+        return ResponseEntity.ok().body(responseEntities);
+    }
+
+    @GetMapping("/perfil")
+    @Operation(summary = "Consultar perfil próprio", description = "Recupera os dados detalhados do candidato autenticado na sessão atual.")
+    @ApiResponse(responseCode = "200", description = "Dados do perfil retornados com sucesso")
+    public ResponseEntity<CandidatoResponseDTO> listarDadosAlunoPorRa(){
+        Long candidatoLogado = SecurityUtil.getCurrentUserId();
+        CandidatoResponseDTO candidatoResponseDTO = candidatoService.listarDadosAlunoPorRa(candidatoLogado);
+        return ResponseEntity.ok().body(candidatoResponseDTO);
+    }
+
+    @PatchMapping("/perfil")
+    @Operation(summary = "Atualizar informações de perfil", description = "Atualiza campos específicos do perfil do candidato logado.")
+    @ApiResponse(responseCode = "200", description = "Perfil atualizado com sucesso")
+    public ResponseEntity<CandidatoResponseDTO> atualizarDadosCandidato (@RequestBody @Valid CandidatoAtualizarPerfilDTo dto){
+        Long candidatoLogado = SecurityUtil.getCurrentUserId();
+        CandidatoResponseDTO candidatoResponseDTO = candidatoService.atualizarDadosPerfil(dto, candidatoLogado);
+        return ResponseEntity.ok().body(candidatoResponseDTO);
+    }
+
+    @PatchMapping(value = "/perfil/curriculo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Fazer upload de currículo", description = "Envia ou substitui o arquivo de currículo (PDF) do candidato autenticado.")
+    @ApiResponse(responseCode = "204", description = "Arquivo processado e salvo com sucesso")
+    public ResponseEntity<Void> atualizarCurriculo(@RequestParam("curriculo") MultipartFile curriculo) {
+        converterCurriculo.salvarCurriculo(curriculo);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/perfil/curriculo/visualizar")
+    @Operation(summary = "Visualizar currículo pessoal", description = "Gera o fluxo de visualização do arquivo de currículo do próprio candidato.")
+    @ApiResponse(responseCode = "200", description = "Arquivo carregado com sucesso")
+    @ApiResponse(responseCode = "204", description = "Candidato não possui currículo cadastrado")
+    public ResponseEntity<Resource> visualizarMeuCurriculo() throws MalformedURLException {
+        Long id = SecurityUtil.getCurrentUserId();
+        Candidato c = candidatoRepository.findById(id)
+                .orElseThrow(() -> new DadosNaoEncontrados("Candidato não encontrado"));
+
+        if (c.getCaminhoCurriculo() == null) {
+            return ResponseEntity.noContent().build();
+        }
+
+        return converterCurriculo.visualizarCurriculo(c.getCaminhoCurriculo());
+    }
+
+    @GetMapping("/perfil/curriculo/visualizar/{id_candidatura}/candidatura")
+    @Operation(summary = "Visualizar currículo de candidato (Empresa)", description = "Permite que a empresa visualize o currículo vinculado a uma candidatura específica de suas vagas.")
+    @ApiResponse(responseCode = "200", description = "Visualização permitida e arquivo carregado")
+    @ApiResponse(responseCode = "403", description = "Empresa não possui permissão para visualizar este currículo")
+    public ResponseEntity<Resource> vizualisarCurriculoCandidato(@PathVariable Long id_candidatura) throws MalformedURLException {
+        Long id = SecurityUtil.getCurrentUserId();
+        Candidatura candidatura = candidaturaRepository.findById(id_candidatura).orElseThrow(() -> new DadosNaoEncontrados("Candidatura não encontrada"));
+        Empresa e = empresaRepository.findById(id).orElseThrow(() -> new DadosNaoEncontrados("Empresa não encontrada"));
+        if (e.getId() != candidatura.getVaga().getEmpresa().getId()){
+            throw new RegraDeNegocioVioladaException("Empresa não é dona da vaga");
+        }
+        Candidato c = candidatoRepository.findById(candidatura.getCandidato().getId())
+                .orElseThrow(() -> new DadosNaoEncontrados("Candidato não encontrado"));
+        if (c.getCaminhoCurriculo() == null) {
+            return ResponseEntity.noContent().build();
+        }
+        return converterCurriculo.visualizarCurriculo(c.getCaminhoCurriculo());
+    }
+
+    @PatchMapping("/admin/{ra}/desativar")
+    @Operation(summary = "Inativar candidato", description = "Desativa o acesso de um aluno ao sistema via RA. Requer permissão de Admin.")
+    @ApiResponse(responseCode = "200", description = "Candidato desativado com sucesso")
+    public ResponseEntity<Void> desativarCandidato (@PathVariable String raAluno){
+        candidatoService.desativarCandidato(raAluno);
+        return ResponseEntity.ok().build();
+    }
+
+    @PatchMapping("/admin/{ra}/reativar")
+    @Operation(summary = "Reativar candidato", description = "Restaura o acesso de um aluno ao sistema via RA. Requer permissão de Admin.")
+    @ApiResponse(responseCode = "200", description = "Candidato reativado com sucesso")
+    public ResponseEntity<Void> reativarCandidato (@PathVariable String raAluno){
+        candidatoService.reativarCandidato(raAluno);
+        return ResponseEntity.ok().build();
+    }
+}package com.fatec.vagasFatec.controller;
+
+import com.fatec.vagasFatec.Dto.VagaDto.VagaUpdateDTO;
+import com.fatec.vagasFatec.Dto.VagaDto.VagasResponseDTO;
+import com.fatec.vagasFatec.model.Empresa;
+import com.fatec.vagasFatec.model.Enum.CursosEnum;
+import com.fatec.vagasFatec.model.Vaga;
+import com.fatec.vagasFatec.service.VagasService;
+import com.fatec.vagasFatec.utils.SecurityUtil;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/vagas")
+@RequiredArgsConstructor
+@Tag(name = "Vagas", description = "Endpoints para publicação, manutenção e consulta de oportunidades de emprego")
+public class VagasController {
+
+    private final VagasService vagasService;
+
+    @PostMapping
+    @Operation(summary = "Anunciar nova vaga", description = "Cria uma nova oportunidade de vaga vinculada à empresa autenticada.")
+    @ApiResponse(responseCode = "201", description = "Vaga publicada com sucesso")
+    @ApiResponse(responseCode = "403", description = "Acesso negado - Apenas empresas podem publicar")
+    public ResponseEntity<VagasResponseDTO> criarVaga(@RequestBody @Valid Vaga vaga){
+        VagasResponseDTO vagasResponseDTO = vagasService.criarVaga(vaga);
+        return ResponseEntity.status(HttpStatus.CREATED).body(vagasResponseDTO);
+    }
+
+    @PatchMapping("/{id}")
+    @Operation(summary = "Atualizar dados da vaga", description = "Permite editar informações da vaga. O sistema valida se a empresa logada é a dona da vaga.")
+    @ApiResponse(responseCode = "200", description = "Vaga atualizada com sucesso")
+    public ResponseEntity<VagasResponseDTO> atualizarVaga(@PathVariable Long id, @RequestBody @Valid VagaUpdateDTO dto) {
+        VagasResponseDTO response = vagasService.editarVaga(dto, id);
+        return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/{id}/encerrar")
+    @Operation(summary = "Encerrar vaga", description = "Altera o status da vaga para encerrado, impedindo novas candidaturas.")
+    @ApiResponse(responseCode = "200", description = "Vaga encerrada com sucesso")
+    public ResponseEntity<Void> encerrarVaga(@PathVariable Long id) {
+        vagasService.encerrarVaga(id);
+        return ResponseEntity.ok().build();
+    }
+
+    @PatchMapping("/{id}/reabrir")
+    @Operation(summary = "Reabrir vaga", description = "Torna uma vaga encerrada disponível novamente para candidaturas.")
+    @ApiResponse(responseCode = "200", description = "Vaga reaberta com sucesso")
+    public ResponseEntity<Void> reabrirVaga(@PathVariable Long id) {
+        vagasService.reabrirVaga(id);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/{id}")
+    @Operation(summary = "Remover vaga", description = "Exclui permanentemente a vaga do sistema.")
+    @ApiResponse(responseCode = "200", description = "Vaga deletada com sucesso")
+    public ResponseEntity<Void> deletarVaga(@PathVariable Long id) {
+        vagasService.deletarVaga(id);
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping
+    @Operation(summary = "Listar vagas disponíveis", description = "Retorna todas as vagas abertas. Permite filtragem opcional por curso da FATEC.")
+    @ApiResponse(responseCode = "200", description = "Lista de vagas recuperada")
+    public ResponseEntity<List<VagasResponseDTO>> listarTodasVagas(
+            @Parameter(description = "Filtro opcional por curso (ex: ADS, DSM, GE)")
+            @RequestParam(required = false) CursosEnum curso) {
+        return ResponseEntity.ok(vagasService.listarVagas(curso));
+    }
+
+    @GetMapping("/minhas")
+    @Operation(summary = "Listar minhas vagas (Empresa)", description = "Recupera todas as vagas publicadas exclusivamente pela empresa autenticada.")
+    @ApiResponse(responseCode = "200", description = "Lista de vagas da empresa retornada")
+    public ResponseEntity<List<VagasResponseDTO>> listarMinhasVagas() {
+        Long idEmpresa = SecurityUtil.getCurrentUserId();
+        return ResponseEntity.ok(vagasService.listarMinhasVagas(idEmpresa));
+    }
+}package com.fatec.vagasFatec.service;
+
+import com.fatec.vagasFatec.Dto.VagaDto.VagaUpdateDTO;
+import com.fatec.vagasFatec.Dto.VagaDto.VagasResponseDTO;
+import com.fatec.vagasFatec.exceptions.DadosNaoEncontrados;
+import com.fatec.vagasFatec.exceptions.RegraDeNegocioVioladaException;
+import com.fatec.vagasFatec.model.Empresa;
+import com.fatec.vagasFatec.model.Enum.CursosEnum;
+import com.fatec.vagasFatec.model.Enum.StatusVaga;
+import com.fatec.vagasFatec.model.Vaga;
+import com.fatec.vagasFatec.repository.EmpresaRepository;
+import com.fatec.vagasFatec.repository.Vagarepository;
+import com.fatec.vagasFatec.utils.SecurityUtil;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class VagasService {
+    private final Vagarepository vagarepository;
+    private final EmpresaService empresaService;
+    private final EmpresaRepository empresaRepository;
+
+
+
+    //Metodo Auxiliar para listarVagas
+
+    private VagasResponseDTO converteVagas (Vaga vagaResponde){
+        return  new VagasResponseDTO(
+                vagaResponde.getId(),
+                vagaResponde.getEmpresa().getId(),
+                vagaResponde.getTituloVaga(),
+                vagaResponde.getDescricaoVaga(),
+                vagaResponde.getCursoVaga(),
+                vagaResponde.getTipoVagaEnum(),
+                vagaResponde.getModalidadeVaga(),
+                vagaResponde.getEmpresa().getRazaoSocial(),
+                vagaResponde.getCidadeVaga(),
+                vagaResponde.getBolsaAuxilio(),
+                vagaResponde.getDataPublicacaoVaga(),
+                vagaResponde.getDataEncerramento(),
+                vagaResponde.getStatusvaga()
+
+        );
+    }
+
+    public VagasResponseDTO criarVaga(Vaga vaga) {
+        Long idEmpresaLogada = SecurityUtil.getCurrentUserId();
+
+        // 1. Busca a empresa pelo ID logado ANTES de qualquer acesso a vaga.empresa
+        Empresa empresaLogada = empresaRepository.findById(idEmpresaLogada)
+                .orElseThrow(() -> new DadosNaoEncontrados("Empresa não encontrada para o usuário logado"));
+
+        // 2. Valida status da empresa logada (não da que veio no body, que é null)
+        if (!empresaService.validarStatusEmpresa(idEmpresaLogada)) {
+            throw new RegraDeNegocioVioladaException("Empresa está inativa");
+        }
+
+        // 3. Ignora qualquer empresa que venha no body e seta a correta
+        vaga.setEmpresa(empresaLogada);
+
+        // 4. Salva
+        Vaga salva = vagarepository.save(vaga);
+
+        return converteVagas(salva);
+    }
+
+
+    //EditarVaga
+    public VagasResponseDTO editarVaga (VagaUpdateDTO dto, Long id_vaga){
+        Vaga vaga = vagarepository.findById(id_vaga).orElseThrow(() -> new DadosNaoEncontrados("Erro, vaga não encontrada"));
+
+        Long idEmpresaLogada = SecurityUtil.getCurrentUserId();
+        if (!vaga.getEmpresa().getId().equals(idEmpresaLogada)) {
+            throw new RegraDeNegocioVioladaException("Você não é dono dessa vaga");
+        }
+        boolean validarEmpresa = empresaService.validarStatusEmpresa(idEmpresaLogada);
+        if(validarEmpresa == Boolean.FALSE) {
+            throw  new RegraDeNegocioVioladaException("Status empresa é inativo");
+        }
+
+        if (dto.tituloVaga() != null) {
+            vaga.setTituloVaga(dto.tituloVaga());
+        }
+        if (dto.descricaoVaga() != null) {
+            vaga.setDescricaoVaga(dto.descricaoVaga());
+        }
+        if (dto.cursoVaga() != null) {
+            vaga.setCursoVaga(dto.cursoVaga());
+        }
+        if (dto.tipoVaga() != null) {
+            vaga.setTipoVagaEnum(dto.tipoVaga());
+        }
+
+        if (dto.cidadeVaga() != null) {
+            vaga.setCidadeVaga(dto.cidadeVaga());
+        }
+        if (dto.bolsaAuxilio() != null) {
+            vaga.setBolsaAuxilio(dto.bolsaAuxilio());
+        }
+        if (dto.dataEncerramento() != null) {
+            vaga.setDataEncerramento(dto.dataEncerramento());
+        }
+
+        vagarepository.save(vaga);
+        return  converteVagas(vaga);
+    }
+
+    // Encerrar
+    public void encerrarVaga(Long idVaga) {
+        Vaga vaga = vagarepository.findById(idVaga)
+                .orElseThrow(() -> new DadosNaoEncontrados("Vaga não encontrada"));
+
+        Long idEmpresaLogada = SecurityUtil.getCurrentUserId();
+        if (!vaga.getEmpresa().getId().equals(idEmpresaLogada)) {
+            throw new RegraDeNegocioVioladaException("Você não é dono dessa vaga");
+        }
+        if (!empresaService.validarStatusEmpresa(idEmpresaLogada)) {
+            throw new RegraDeNegocioVioladaException("Empresa inativa");
+        }
+
+        vaga.setStatusvaga(StatusVaga.ENCERRADA);
+        vagarepository.save(vaga);
+    }
+
+    //Reabrir Vaga
+    public void reabrirVaga(Long idVaga){
+        Vaga vaga = vagarepository.findById(idVaga).orElseThrow(() -> new DadosNaoEncontrados("Vaga não encontrada"));
+        boolean validarEmpresa = empresaService.validarStatusEmpresa(vaga.getEmpresa().getId());
+        if(validarEmpresa == Boolean.FALSE) {
+            throw  new RegraDeNegocioVioladaException("Status empresa é inativo");
+        }
+        if (vaga.getEmpresa().getId() != SecurityUtil.getCurrentUserId()){
+            throw new RegraDeNegocioVioladaException("Empresa não é dona da vaga");
+        }
+        vaga.setStatusvaga(StatusVaga.ABERTA);
+        vagarepository.save(vaga);
+    }
+
+    //Deletar Vaga
+
+    public void deletarVaga(Long id){
+        Vaga vaga = vagarepository.findById(id).orElseThrow(() -> new DadosNaoEncontrados("Vaga não encontrada"));
+        if (vaga.getEmpresa().getId() != SecurityUtil.getCurrentUserId()){
+            throw new RegraDeNegocioVioladaException("Empresa não é dona da vaga");
+        }
+        vagarepository.deleteById(id);
+    }
+
+    //Listar Todas as vagas (menos as fechadas), e caso tiver alguma requisição de curso para filtro ele filtra
+    public List<VagasResponseDTO> listarVagas(CursosEnum curso){
+
+        List<Vaga> vagas;
+        if (curso != null){
+            vagas = vagarepository.findByStatusvagaAndCursoVaga(StatusVaga.ABERTA, curso);
+        }
+        else {
+            vagas = vagarepository.findByStatusvaga(StatusVaga.ABERTA);
+        }
+        return vagas.stream().map(this::converteVagas
+        ).toList();
+    }
+
+
+
+
+
+    //Listar Minhas Vagas (Lista todas as vagas da empresa em questão, ate as fechadas)
+
+    public List<VagasResponseDTO> listarMinhasVagas(Long idEmpresa){
+        return vagarepository.findByEmpresa_Id(idEmpresa).stream().map(this::converteVagas
+        ).toList();
+    }
+}
+package com.fatec.vagasFatec.service;
+
+import com.fatec.vagasFatec.Dto.EmpresaDTO.EmpreRequestDTO;
+import com.fatec.vagasFatec.Dto.EmpresaDTO.EmpresaAtualizarDTO;
+import com.fatec.vagasFatec.Dto.EmpresaDTO.EmpresaResponseDTO;
+import com.fatec.vagasFatec.exceptions.DadosInvalidosException;
+import com.fatec.vagasFatec.exceptions.DadosNaoEncontrados;
+import com.fatec.vagasFatec.exceptions.RegraDeNegocioVioladaException;
+import com.fatec.vagasFatec.model.Empresa;
+import com.fatec.vagasFatec.model.Enum.Role;
+import com.fatec.vagasFatec.model.Enum.StatusEmpresa;
+import com.fatec.vagasFatec.repository.EmpresaRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class EmpresaService {
+
+    private final EmpresaRepository empresaRepository;
+    private final PasswordEncoder passwordEncoder;
+
+    // Metodo auxiliar de conversão
+    private EmpresaResponseDTO converter(Empresa empresa) {
+        return new EmpresaResponseDTO(
+                empresa.getId(),
+                empresa.getRazaoSocial(),
+                empresa.getNomeFantasia(),
+                empresa.getEmail(),
+                empresa.getCnpj(),
+                empresa.getTelefone(),
+                empresa.getStatusEmpresa()
+
+        );
+    }
+
+
+    // Metodo auxiliar para validar status
+    public boolean validarStatusEmpresa(Long id_empresa){
+        Empresa e = empresaRepository.findById(id_empresa).orElseThrow(() -> new DadosNaoEncontrados("Erro empresa não encontrada"));
+        if(e.getStatusEmpresa() != StatusEmpresa.ATIVO){
+            return false;
+        }
+        return true;
+    }
+
+    // Criar empresa
+    public EmpresaResponseDTO criarEmpresa(EmpreRequestDTO dto) {
+        Empresa salva = new Empresa();
+        salva.setRazaoSocial(dto.razaoSocial());
+        salva.setNomeFantasia(dto.nomeFantasia());
+        salva.setEmail(dto.email());
+        salva.setCnpj(dto.cnpj());
+        salva.setTelefone(dto.telefone());
+        salva.setSenha(passwordEncoder.encode(dto.senha()));
+        salva.setRole(Role.ROLE_EMPRESA);
+        empresaRepository.save(salva);
+        return converter(salva);
+    }
+
+    // Listar todas
+    public List<EmpresaResponseDTO> listarEmpresas() {
+        return empresaRepository.findAll()
+                .stream()
+                .map(this::converter)
+                .toList();
+    }
+
+    //Criar metodo de atualização de dados da empresa igual o do candidato
+    public EmpresaResponseDTO atualizarDadosEmpresa(EmpresaAtualizarDTO dados, Long id_empresa){
+        Empresa empresa = empresaRepository.findById(id_empresa).orElseThrow(() -> new DadosNaoEncontrados("Empresa não encontrada"));
+        if (empresa.getStatusEmpresa() != StatusEmpresa.ATIVO){
+            throw new RegraDeNegocioVioladaException("Empresa não está ativa");
+        }
+        if (!empresa.getId().equals(id_empresa)){
+            throw new DadosInvalidosException("Empresa não é dona do perfil");
+        }
+
+        if (dados.razaoSocial() != null){
+            empresa.setRazaoSocial(dados.razaoSocial());
+        }
+        if (dados.nomeFantasia() != null){
+            empresa.setNomeFantasia(dados.nomeFantasia());
+        }
+        if (dados.email() != null){
+            empresa.setEmail(dados.email());
+        }
+        if (dados.cnpj() != null){
+            empresa.setCnpj(dados.cnpj());
+        }
+        if (dados.telefone() != null){
+            empresa.setTelefone(dados.telefone());
+        }
+
+        empresaRepository.save(empresa);
+        return converter(empresa);
+    }
+}package com.fatec.vagasFatec.service;
+
+import com.fatec.vagasFatec.Dto.CandidatoDTO.CandidatoAtualizarPerfilDTo;
+import com.fatec.vagasFatec.Dto.CandidatoDTO.CandidatoCadastroDTO;
+import com.fatec.vagasFatec.Dto.CandidatoDTO.CandidatoResponseDTO;
+import com.fatec.vagasFatec.exceptions.DadosNaoEncontrados;
+import com.fatec.vagasFatec.exceptions.EntidadeJaExistenteException;
+import com.fatec.vagasFatec.exceptions.RegraDeNegocioVioladaException;
+import com.fatec.vagasFatec.model.Candidato;
+import com.fatec.vagasFatec.model.Enum.Role;
+import com.fatec.vagasFatec.model.Enum.StatusCandidato;
+import com.fatec.vagasFatec.repository.CandidatoRepository;
+import com.fatec.vagasFatec.utils.EmailSender;
+import com.fatec.vagasFatec.utils.VerificationCodeGenerator;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class CandidatoService {
+
+    private final CandidatoRepository candidatoRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final EmailSender enviarEmail;
+    private final VerificationCodeGenerator gerarCodigo;
+
+
+
+    //Metodo Auxiliar para conversao de dados
+    private CandidatoResponseDTO converterCandidatos (Candidato candidato){
+        return  new CandidatoResponseDTO(
+                 candidato.getId(),
+                 candidato.getNomeCompleto(),
+                 candidato.getRaAluno(),
+                 candidato.getEmailCandidato(),
+                 candidato.getDataNascimento(),
+                 candidato.getTelefone(),
+                 candidato.getCidade(),
+                 candidato.getLinkLinkedin(),
+                 candidato.getLinkGithub(),
+                 candidato.getBioCandidato(),
+                 candidato.getStatusCandidato(),
+                candidato.getCaminhoCurriculo(),
+                candidato.getNomeCurriculo()
+        );
+    }
+
+    //Metodo Auxiliar para validar Status Candidato
+    public boolean validarStatusCandidato(Long candidatoLogado){
+        Candidato c = candidatoRepository.findById(candidatoLogado).orElseThrow(() -> new RuntimeException("Candidato não encontrado"));
+
+        if (c.getStatusCandidato() == StatusCandidato.ATIVO){
+            return Boolean.TRUE;
+        }
+        return Boolean.FALSE;
+    }
+
+
+
+    //Criar Candidato
+    public  CandidatoResponseDTO criarCandidato(CandidatoCadastroDTO dto){
+
+        if(candidatoRepository.existsByEmailCandidato(dto.emailCandidato())){
+            throw  new EntidadeJaExistenteException("E-mail já cadastrado");
+        }
+        if(candidatoRepository.existsByRaAluno(dto.raAluno())){
+            throw new EntidadeJaExistenteException("RA já cadastrado");
+        }
+
+        Candidato candidato = new Candidato();
+                candidato.setNomeCompleto(dto.nomeCompleto());
+                candidato.setRaAluno(dto.raAluno());
+                candidato.setEmailCandidato(dto.emailCandidato());
+                candidato.setSenha(passwordEncoder.encode(dto.senha()));
+                candidato.setRole(Role.ROLE_CANDIDATO);
+
+        candidatoRepository.save(candidato);
+        String codigo = gerarCodigo.gerarCodigoValidacao(candidato.getEmailCandidato());
+
+        enviarEmail.enviarEmail(candidato.getEmailCandidato(), "OLá, segue abaixo o código para validação de seu registro",codigo);
+
+
+        return converterCandidatos(candidato);
+    }
+
+    //Atualizar dados faltantes
+    public CandidatoResponseDTO atualizarDadosPerfil (CandidatoAtualizarPerfilDTo dadosPerfil, Long candidatoLogado){
+
+        boolean validarCandidato = validarStatusCandidato(candidatoLogado);
+        if(validarCandidato == Boolean.FALSE){
+            throw new RegraDeNegocioVioladaException("Candidato Inativo");
+        }
+
+        Candidato candidato = candidatoRepository.findById(candidatoLogado).orElseThrow(() -> new DadosNaoEncontrados("Candidato nao encontrado"));
+
+        if(dadosPerfil.telefone() != null) {
+            candidato.setTelefone(dadosPerfil.telefone());
+        }
+        if(dadosPerfil.cidade() != null) {
+            candidato.setCidade(dadosPerfil.cidade());
+        }
+        if(dadosPerfil.linkedin() != null) {
+            candidato.setLinkLinkedin(dadosPerfil.linkedin());
+        }
+        if(dadosPerfil.github() != null) {
+            candidato.setLinkGithub(dadosPerfil.github());
+        }
+        if(dadosPerfil.bio() != null) {
+            candidato.setBioCandidato(dadosPerfil.bio());
+        }
+        if(dadosPerfil.dataNascimento() != null) {
+            candidato.setDataNascimento(dadosPerfil.dataNascimento());
+        }
+
+        candidatoRepository.save(candidato);
+        return converterCandidatos(candidato);
+    }
+
+
+
+    //Listar dados do aluno da sessão, por RA
+    public CandidatoResponseDTO listarDadosAlunoPorRa (Long id){
+        Candidato c = candidatoRepository.findById(id).orElseThrow(() -> new RuntimeException("Aluno não encontrado"));
+        return converterCandidatos(c);
+    }
+
+
+
+
+
+    //Listar Todos os candidatos (Somente admins)
+    public List<CandidatoResponseDTO> listarTodosCandidatos(){
+        return candidatoRepository.findAll().stream().map((this::converterCandidatos)).toList();
+    }
+
+    //Desativar Candidato (Somente adm)
+    public void desativarCandidato(String raAluno){
+        Candidato candidato = candidatoRepository.findByRaAluno(raAluno).orElseThrow(() -> new RuntimeException("Candidato não encontrado"));
+        candidato.setStatusCandidato(StatusCandidato.INATIVO);
+        candidatoRepository.save(candidato);
+    }
+
+    //Reativar / ativar Candidato (Somente adm)
+    public void reativarCandidato(String raAluno){
+        Candidato candidato = candidatoRepository.findByRaAluno(raAluno).orElseThrow(() -> new RuntimeException("Candidato não encontrado"));
+        candidato.setStatusCandidato(StatusCandidato.ATIVO);
+        candidatoRepository.save(candidato);
+    }
+}
+package com.fatec.vagasFatec.service;
+
+import com.fatec.vagasFatec.Dto.CandidaturaDTO.CandidaturaObservacaoDTO;
+import com.fatec.vagasFatec.Dto.CandidaturaDTO.CandidaturaResponseDTO;
+import com.fatec.vagasFatec.exceptions.DadosInvalidosException;
+import com.fatec.vagasFatec.exceptions.DadosNaoEncontrados;
+import com.fatec.vagasFatec.exceptions.RegraDeNegocioVioladaException;
+import com.fatec.vagasFatec.model.Candidato;
+import com.fatec.vagasFatec.model.Candidatura;
+import com.fatec.vagasFatec.model.Empresa;
+import com.fatec.vagasFatec.model.Enum.StatusCandidato;
+import com.fatec.vagasFatec.model.Enum.StatusCandidatura;
+import com.fatec.vagasFatec.model.Enum.StatusEmpresa;
+import com.fatec.vagasFatec.model.Enum.StatusVaga;
+import com.fatec.vagasFatec.model.Vaga;
+import com.fatec.vagasFatec.repository.CandidatoRepository;
+import com.fatec.vagasFatec.repository.CandidaturaRepository;
+import com.fatec.vagasFatec.repository.EmpresaRepository;
+import com.fatec.vagasFatec.repository.Vagarepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class CandidaturaService {
+    private final CandidatoRepository candidatoRepository;
+    private final Vagarepository vagarepository;
+    private final CandidaturaRepository candidaturaRepository;
+    private final EmpresaRepository empresaRepository;
+
+
+    //Metodo auxiliar para conversao
+    private CandidaturaResponseDTO converterCandidatura (Candidatura candidatura){
+        return new CandidaturaResponseDTO(
+
+                candidatura.getId(),
+                candidatura.getCandidato().getId(),
+                candidatura.getVaga().getId(),
+                candidatura.getVaga().getTituloVaga(),
+                candidatura.getVaga().getEmpresa().getRazaoSocial(),
+                candidatura.getStatus(),
+                candidatura.getObservacaoEmpresa(),
+                candidatura.getDataInscricao()
+
+
+        );
+    }
+
+    //CriarCandidatura
+    public CandidaturaResponseDTO criarCandidatura (Long id_aluno, Long id_vaga){
+        Candidato candidato = candidatoRepository.findById(id_aluno).orElseThrow(() -> new RuntimeException("Candidato não existente"));
+        Vaga vaga = vagarepository.findById(id_vaga).orElseThrow(() -> new DadosNaoEncontrados("Erro, vaga não encontrada"));
+
+        if (candidato.getStatusCandidato() != StatusCandidato.ATIVO){
+            throw  new RegraDeNegocioVioladaException("Candidato está inativo");
+        }
+        if (vaga.getStatusvaga() != StatusVaga.ABERTA){
+            throw new RegraDeNegocioVioladaException("Vaga já encerrada");
+        }
+
+        if (candidaturaRepository.existsByCandidatoIdAndVagaId(id_aluno, id_vaga)){
+            throw new RegraDeNegocioVioladaException("Voce ja se inscreveu nesta vaga");
+        }
+
+        Candidatura candidatura =new Candidatura();
+        candidatura.setCandidato(candidato);
+        candidatura.setVaga(vaga);
+
+        candidaturaRepository.save(candidatura);
+
+        return converterCandidatura(candidatura);
+    }
+
+    //Listar Todas as candidaturas do aluno
+    public List<CandidaturaResponseDTO> listarTodasCandidaturasAluno (Long id_aluno){
+        return candidaturaRepository.findByCandidatoId(id_aluno).stream().map(this::converterCandidatura).toList();
+    }
+
+    //Listar Todas as candidaturas de tod mundo (Somente adm para depuração)
+    public List<CandidaturaResponseDTO> listarTodasCandidaturas(){
+        return candidaturaRepository.findAll().stream().map(this::converterCandidatura).toList();
+    }
+
+    //Metodo para aluno desistir da candidatura
+    public void desistirCandidatura (Long id_aluno, Long id_vaga){
+        Candidatura candidatura = candidaturaRepository.findByCandidato_IdAndVaga_Id(id_aluno,id_vaga).orElseThrow(() -> new DadosNaoEncontrados("Vaga não encontrada"));
+
+        if (candidatura.getVaga().getStatusvaga() == StatusVaga.ENCERRADA){
+            throw new RegraDeNegocioVioladaException("Vaga já encerrada");
+        }
+        if (candidatura.getStatus() == StatusCandidatura.REJEITADO || candidatura.getStatus() == StatusCandidatura.APROVADO) {
+            throw new RegraDeNegocioVioladaException("Processo seletivo já finalizado");
+        }
+        if (candidatura.getStatus() == StatusCandidatura.DESISTIU){
+            throw new RegraDeNegocioVioladaException("Voce ja desistiu desta vaga");
+        }
+
+        candidatura.setStatus(StatusCandidatura.DESISTIU);
+        candidaturaRepository.save(candidatura);
+    }
+
+    //Empresa alterar Status candidatura (APROVADO / REJEITADO) (Somente empressas podem)
+    public void alterarStatusCandidatura (Long idCandidatura, Long idEmpresa, StatusCandidatura novoStatus){
+        Candidatura candidatura = candidaturaRepository.findById(idCandidatura).orElseThrow(() -> new RuntimeException("Candidatura não encontrada"));
+        Candidato candidato = candidatoRepository.findById(candidatura.getCandidato().getId()).orElseThrow(() -> new RuntimeException("Candidato não encontrado"));
+        Empresa empresa = empresaRepository.findById(idEmpresa).orElseThrow(() -> new RuntimeException("Empresa nao encontrada"));
+
+        if (candidato.getStatusCandidato() == StatusCandidato.INATIVO){
+            throw new RegraDeNegocioVioladaException("Candidato está inativo");
+        }
+        if (!candidatura.getVaga().getEmpresa().getId().equals(idEmpresa)){
+            throw new RegraDeNegocioVioladaException("Empresa não é dona da vaga");
+        }
+
+        if (empresa.getStatusEmpresa() != StatusEmpresa.ATIVO){
+            throw new RegraDeNegocioVioladaException("Empresa está inativa");
+        }
+
+        if (candidatura.getStatus() == StatusCandidatura.APROVADO ||
+                candidatura.getStatus() == StatusCandidatura.REJEITADO) {
+            throw new RegraDeNegocioVioladaException("Processo já finalizado");
+        }
+
+        if(novoStatus != StatusCandidatura.APROVADO && novoStatus != StatusCandidatura.REJEITADO){
+            throw new DadosInvalidosException("Status invalido");
+                                }
+
+        candidatura.setStatus(novoStatus);
+        candidaturaRepository.save(candidatura);
+
+
+    }
+
+
+    //Empresa adicionar comentarios a candidaturas
+    public void adicionarComentariosCandidatura(Long id_candidatura, Long id_empresa, CandidaturaObservacaoDTO observacaoDTO){
+        Candidatura candidatura = candidaturaRepository.findById(id_candidatura).orElseThrow(() -> new RuntimeException("Candidatura não encontrada"));
+        Empresa empresa = empresaRepository.findById(id_empresa).orElseThrow(() -> new RuntimeException("Empresa nao encontrada"));
+        Candidato candidato = candidatoRepository.findById(candidatura.getCandidato().getId()).orElseThrow(() -> new RuntimeException("Candidato não encontrado"));
+
+
+        if (!candidatura.getVaga().getEmpresa().getId().equals(id_empresa)){
+            throw new RegraDeNegocioVioladaException("Empresa não é dona da vaga");
+        }
+        if (empresa.getStatusEmpresa() != StatusEmpresa.ATIVO){
+            throw new RegraDeNegocioVioladaException("Empresa está inativa");
+        }
+        if (candidato.getStatusCandidato() == StatusCandidato.INATIVO){
+            throw new RegraDeNegocioVioladaException("Candidato está inativo");
+        }
+        if (candidatura.getStatus() == StatusCandidatura.APROVADO ||
+                candidatura.getStatus() == StatusCandidatura.REJEITADO) {
+            throw new RegraDeNegocioVioladaException("Processo já finalizado");
+        }
+        if (observacaoDTO.observacaoCandidatura().length() > 150){
+            throw new DadosInvalidosException("mensagem muito grande máximo de 150 caracteres");
+        }
+        candidatura.setObservacaoEmpresa(observacaoDTO.observacaoCandidatura());
+        candidaturaRepository.save(candidatura);
+
+
+
+    }
+
+    //Listar candidaturas por vaga
+    public List<CandidaturaResponseDTO> listarCandidaturasPorVaga(Long id_vaga, Long id_empresa){
+        Vaga vaga = vagarepository.findById(id_vaga).orElseThrow(() -> new RuntimeException("Erro, vaga não encontrada"));
+        if (vaga.getEmpresa().getStatusEmpresa() != StatusEmpresa.ATIVO){
+            throw new RegraDeNegocioVioladaException("Empresa está inativa");
+        }
+        if (!vaga.getEmpresa().getId().equals(id_empresa)){
+            throw new RegraDeNegocioVioladaException("Empresa não é dona da vaga");
+        }
+
+        return candidaturaRepository.findByVaga_Id(id_vaga).stream().map(this::converterCandidatura).toList();
+
+    }
+
+}
+package com.fatec.vagasFatec.infra.exceptions;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
+import org.springframework.http.HttpStatus;
+
+import java.time.LocalDateTime;
+import java.util.Map;
+
+
+@AllArgsConstructor
+@Getter
+@Setter
+public class RestErrorMessage {
+
+    private LocalDateTime timestamp;
+    private Integer status;
+    private String error;
+    private String message;
+    private String path;
+    private Map<String, String> fieldErrors;
+
+    public RestErrorMessage(LocalDateTime timestamp,
+                            Integer status,
+                            String error,
+                            String message,
+                            String path) {
+        this.timestamp = timestamp;
+        this.status = status;
+        this.error = error;
+        this.message = message;
+        this.path = path;
+    }
+}
+
+
+package com.fatec.vagasFatec.infra.exceptions;
+
+import com.fatec.vagasFatec.exceptions.*;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
+
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
+
+@ControllerAdvice
+public class RestExceptionHandler extends ResponseEntityExceptionHandler {
+
+    private RestErrorMessage buildError(
+            HttpStatus status,
+            String message,
+            WebRequest request
+    ) {
+        return new RestErrorMessage(
+                LocalDateTime.now(),
+                status.value(),
+                status.getReasonPhrase(),
+                message,
+                request.getDescription(false).replace("uri=", "")
+        );
+    }
+
+    // 400 - Dados inválidos
+    @ExceptionHandler(DadosInvalidosException.class)
+    public ResponseEntity<RestErrorMessage> handleDadosInvalidos(
+            DadosInvalidosException ex,
+            WebRequest request
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(buildError(HttpStatus.BAD_REQUEST, ex.getMessage(), request));
+    }
+
+    // 404 - Não encontrado
+    @ExceptionHandler(DadosNaoEncontrados.class)
+    public ResponseEntity<RestErrorMessage> handleNaoEncontrado(
+            DadosNaoEncontrados ex,
+            WebRequest request
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(buildError(HttpStatus.NOT_FOUND, ex.getMessage(), request));
+    }
+
+    // 403 - Operação não permitida
+    @ExceptionHandler(OperacaoNaoPermitidaException.class)
+    public ResponseEntity<RestErrorMessage> handleOperacaoNaoPermitida(
+            OperacaoNaoPermitidaException ex,
+            WebRequest request
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(buildError(HttpStatus.FORBIDDEN, ex.getMessage(), request));
+    }
+
+    // 409 - Entidade já existe
+    @ExceptionHandler(EntidadeJaExistenteException.class)
+    public ResponseEntity<RestErrorMessage> handleConflito(
+            EntidadeJaExistenteException ex,
+            WebRequest request
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(buildError(HttpStatus.CONFLICT, ex.getMessage(), request));
+    }
+
+    // 422 - Regra de negócio
+    @ExceptionHandler(RegraDeNegocioVioladaException.class)
+    public ResponseEntity<RestErrorMessage> handleRegraNegocio(
+            RegraDeNegocioVioladaException ex,
+            WebRequest request
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.UNPROCESSABLE_ENTITY)
+                .body(buildError(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage(), request));
+    }
+
+    // Validação @Valid
+    @Override
+    protected ResponseEntity<Object> handleMethodArgumentNotValid(
+            MethodArgumentNotValidException ex,
+            HttpHeaders headers,
+            HttpStatusCode status,
+            WebRequest request
+    ) {
+
+        Map<String, String> errors = new HashMap<>();
+
+        for (FieldError error : ex.getBindingResult().getFieldErrors()) {
+            errors.put(error.getField(), error.getDefaultMessage());
+        }
+
+        RestErrorMessage errorResponse = new RestErrorMessage(
+                LocalDateTime.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                HttpStatus.BAD_REQUEST.getReasonPhrase(),
+                "Erro de validação",
+                request.getDescription(false).replace("uri=", "")
+        );
+
+        errorResponse.setFieldErrors(errors);
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+    }
+
+    // Fallback para erro inesperado
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<RestErrorMessage> handleGeneric(
+            Exception ex,
+            WebRequest request
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(buildError(
+                        HttpStatus.INTERNAL_SERVER_ERROR,
+                        "Erro interno no servidor",
+                        request
+                ));
+    }
+
+}

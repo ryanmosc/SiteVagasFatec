@@ -11,3 +11,5 @@ public interface CandidatoRepository extends JpaRepository<Candidato, Long> {
     Optional<Candidato> findByRaAluno(String raAluno);
     Optional<Candidato> findByEmailCandidato (String email);
 }
+
+
