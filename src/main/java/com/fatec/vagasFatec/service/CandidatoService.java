@@ -4,6 +4,7 @@ import com.fatec.vagasFatec.Dto.CandidatoDTO.CandidatoAtualizarPerfilDTo;
 import com.fatec.vagasFatec.Dto.CandidatoDTO.CandidatoCadastroDTO;
 import com.fatec.vagasFatec.Dto.CandidatoDTO.CandidatoMostrarDTO;
 import com.fatec.vagasFatec.Dto.CandidatoDTO.CandidatoResponseDTO;
+import com.fatec.vagasFatec.auth.service.RecaptchaService;
 import com.fatec.vagasFatec.exceptions.DadosNaoEncontrados;
 import com.fatec.vagasFatec.exceptions.EntidadeJaExistenteException;
 import com.fatec.vagasFatec.exceptions.RegraDeNegocioVioladaException;
@@ -28,7 +29,7 @@ public class CandidatoService {
     private final PasswordEncoder passwordEncoder;
     private final EmailSender enviarEmail;
     private final VerificationCodeGenerator gerarCodigo;
-
+    private final RecaptchaService recaptchaService;
 
 
     //Metodo Auxiliar para conversao de dados
@@ -64,6 +65,15 @@ public class CandidatoService {
 
     //Criar Candidato
     public  CandidatoResponseDTO criarCandidato(CandidatoCadastroDTO dto){
+
+        if (dto.captcha() == null || dto.captcha().isBlank()) {
+            throw new RegraDeNegocioVioladaException("Token do reCAPTCHA não fornecido.");
+        }
+
+        boolean captchaValido = recaptchaService.validar(dto.captcha());
+        if (!captchaValido) {
+            throw new RegraDeNegocioVioladaException("reCAPTCHA inválido. Por favor, tente novamente.");
+        }
 
         if(candidatoRepository.existsByEmailCandidato(dto.emailCandidato())){
             throw  new EntidadeJaExistenteException("E-mail já cadastrado");

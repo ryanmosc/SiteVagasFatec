@@ -41,6 +41,7 @@ public class VerificationCodeGenerator {
                 stringBuilder.append(CHARS.charAt(index));
 
             }
+            System.out.println("Cadastro de usuario");
             System.out.println(stringBuilder.toString());
             candidato.setToken(stringBuilder.toString());
             candidato.setCreatedAt(LocalDateTime.now());
@@ -56,6 +57,7 @@ public class VerificationCodeGenerator {
                 int index = RANDOM.nextInt(CHARS.length());
                 stringBuilder.append(CHARS.charAt(index));
             }
+            System.out.println("Cadastro de empresa");
             System.out.println(stringBuilder.toString());
             empresa.setToken(stringBuilder.toString());
             empresa.setCreatedAt(LocalDateTime.now());

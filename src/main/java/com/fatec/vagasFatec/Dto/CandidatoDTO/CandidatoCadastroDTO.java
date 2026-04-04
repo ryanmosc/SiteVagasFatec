@@ -4,6 +4,7 @@ public record CandidatoCadastroDTO(
         String nomeCompleto,
         String raAluno,
         String emailCandidato,
-        String senha
+        String senha,
+        String captcha
 ) {
 }
