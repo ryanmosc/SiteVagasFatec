@@ -5,11 +5,14 @@ import com.fatec.vagasFatec.Dto.EmpresaDTO.EmpresaAtualizarDTO;
 import com.fatec.vagasFatec.Dto.EmpresaDTO.EmpresaResponseDTO;
 import com.fatec.vagasFatec.exceptions.DadosInvalidosException;
 import com.fatec.vagasFatec.exceptions.DadosNaoEncontrados;
+import com.fatec.vagasFatec.exceptions.EntidadeJaExistenteException;
 import com.fatec.vagasFatec.exceptions.RegraDeNegocioVioladaException;
 import com.fatec.vagasFatec.model.Empresa;
 import com.fatec.vagasFatec.model.Enum.Role;
 import com.fatec.vagasFatec.model.Enum.StatusEmpresa;
 import com.fatec.vagasFatec.repository.EmpresaRepository;
+import com.fatec.vagasFatec.utils.EmailSender;
+import com.fatec.vagasFatec.utils.VerificationCodeGenerator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -22,6 +25,8 @@ public class EmpresaService {
 
     private final EmpresaRepository empresaRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EmailSender enviarEmail;
+    private final VerificationCodeGenerator gerarCodigo;
 
     // Metodo auxiliar de conversão
     private EmpresaResponseDTO converter(Empresa empresa) {
@@ -49,6 +54,12 @@ public class EmpresaService {
 
     // Criar empresa
     public EmpresaResponseDTO criarEmpresa(EmpreRequestDTO dto) {
+
+        if(empresaRepository.existsByEmail(dto.email())){
+            throw  new EntidadeJaExistenteException("E-mail já cadastrado");
+        }
+
+
         Empresa salva = new Empresa();
         salva.setRazaoSocial(dto.razaoSocial());
         salva.setNomeFantasia(dto.nomeFantasia());
@@ -60,6 +71,7 @@ public class EmpresaService {
         empresaRepository.save(salva);
         return converter(salva);
     }
+
 
     // Listar todas
     public List<EmpresaResponseDTO> listarEmpresas() {

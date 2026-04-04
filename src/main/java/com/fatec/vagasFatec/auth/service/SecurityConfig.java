@@ -45,6 +45,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/vagas/**").permitAll()         // detalhes de vaga aberta (se existir)
                         .requestMatchers(HttpMethod.POST, "/api/candidatos/validar").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/candidatos/validar/reenviar").permitAll()
+                        .requestMatchers(HttpMethod.POST,"/api/candidatos/validar/empresa").permitAll()
 
 
                         // === Rotas de CANDIDATO (ações próprias) ===
@@ -91,10 +92,25 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         return request -> {
             CorsConfiguration config = new CorsConfiguration();
+
+            // Libera TODAS as origens (qualquer domínio, IP, localhost, etc.)
             config.setAllowedOriginPatterns(List.of("*"));
-            config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+
+            // Métodos HTTP permitidos
+            config.setAllowedMethods(List.of("*"));  // ou liste explicitamente: "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"
+
+            // Todos os headers (inclui Authorization, Content-Type, etc.)
             config.setAllowedHeaders(List.of("*"));
+
+            // Importante: expõe headers que o frontend pode ler (ex: Authorization)
+            config.setExposedHeaders(List.of("Authorization", "Content-Disposition"));
+
+            // Se você estiver enviando credenciais (JWT no header, cookies, etc.)
             config.setAllowCredentials(true);
+
+            // Tempo de cache do preflight (OPTIONS)
+            config.setMaxAge(3600L); // 1 hora
+
             return config;
         };
     }

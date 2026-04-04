@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/candidatos/validar")
 public class ValidarCodigoController {
     private final VerificationCodeGenerator verificationCodeGenerator;
+    private final EmailSender enviarEmail;
 
     @PostMapping
     public ResponseEntity<Void> validarCodigo(@RequestBody ValidarCandidatoDTO c){
@@ -18,9 +19,16 @@ public class ValidarCodigoController {
 
     }
 
+    @PostMapping("/empresa")
+    public ResponseEntity<Void> validarCodigoEmpresa(@RequestBody ValidarCandidatoDTO dto){
+        verificationCodeGenerator.validarCodigoEmpresa(dto);
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/reenviar")
     public ResponseEntity<Void> reenviarCodigo(@RequestParam String email){
-        verificationCodeGenerator.gerarCodigoValidacao(email);
+        String codigo = verificationCodeGenerator.gerarCodigoValidacao(email);
+        enviarEmail.enviarEmail(email, "OLá, segue abaixo o código para validação de seu registro",codigo);
         return ResponseEntity.noContent().build();
     }
 }
