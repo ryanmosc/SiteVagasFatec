@@ -12,6 +12,7 @@ import com.fatec.vagasFatec.model.Enum.Role;
 import com.fatec.vagasFatec.model.Enum.StatusEmpresa;
 import com.fatec.vagasFatec.repository.EmpresaRepository;
 import com.fatec.vagasFatec.utils.EmailSender;
+import com.fatec.vagasFatec.utils.SecurityUtil;
 import com.fatec.vagasFatec.utils.VerificationCodeGenerator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -50,6 +51,19 @@ public class EmpresaService {
             return false;
         }
         return true;
+    }
+
+    //Listar Todos os dados da empresa
+    public EmpresaAtualizarDTO listarDadosEmpresa(){
+        Long empresaLogadaId = SecurityUtil.getCurrentUserId();
+        Empresa empresa = empresaRepository.findById(empresaLogadaId).orElseThrow(() -> new DadosNaoEncontrados("Erro: Empresa não encontrada"));
+        return new EmpresaAtualizarDTO(
+                empresa.getRazaoSocial(),
+                empresa.getNomeFantasia(),
+                empresa.getEmail(),
+                empresa.getCnpj(),
+                empresa.getTelefone()
+        );
     }
 
     // Criar empresa

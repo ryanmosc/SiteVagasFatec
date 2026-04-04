@@ -25,6 +25,14 @@ public class EmpresaController {
 
     private final EmpresaService empresaService;
 
+    @GetMapping("/perfil")
+    @Operation(summary = "Listar Dados Empresa", description = "Lista todos os dados (Atualizaveis) da empresa logada")
+    @ApiResponse(responseCode = "200", description = "Dados retornados com sucesso")
+    public ResponseEntity<EmpresaAtualizarDTO> listarDadosEmpresa(){
+        EmpresaAtualizarDTO dto = empresaService.listarDadosEmpresa();
+        return ResponseEntity.ok().body(dto);
+    }
+
     @PostMapping
     @Operation(summary = "Cadastrar nova empresa", description = "Realiza o cadastro de uma nova organização no sistema. Acesso público.")
     @ApiResponse(responseCode = "201", description = "Empresa cadastrada com sucesso")

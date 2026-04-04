@@ -64,6 +64,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/vagas/{id}/**").hasRole("EMPRESA")                        // editar, encerrar, reabrir, deletar vaga
                         .requestMatchers("/api/candidaturas/{idCandidatura}/**").hasRole("EMPRESA")     // status, observação, etc.
                         .requestMatchers("/perfil/curriculo/visualizar/{id_candidatura}/candidatura").hasRole("EMPRESA")
+                        .requestMatchers(HttpMethod.GET, "/api/empresas/perfil").hasRole("EMPRESA")
                         // === Rotas administrativas (se você tiver ROLE_ADMIN no futuro) ===
                         // .requestMatchers("/api/candidatos", "/api/empresas", "/api/candidaturas").hasRole("ADMIN")
                         // .requestMatchers(HttpMethod.PATCH, "/api/candidatos/**/desativar").hasRole("ADMIN")
