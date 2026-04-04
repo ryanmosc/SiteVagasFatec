@@ -83,6 +83,11 @@ public class EmpresaService {
         salva.setSenha(passwordEncoder.encode(dto.senha()));
         salva.setRole(Role.ROLE_EMPRESA);
         empresaRepository.save(salva);
+
+
+        String codigo = gerarCodigo.gerarCodigoValidacao(salva.getEmail());
+        enviarEmail.enviarEmail(salva.getEmail(), "OLá, segue abaixo o código para validação de seu registro",codigo);
+
         return converter(salva);
     }
 

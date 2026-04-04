@@ -3,6 +3,7 @@ package com.fatec.vagasFatec.utils;
 import com.fatec.vagasFatec.Dto.CandidatoDTO.ValidarCandidatoDTO;
 import com.fatec.vagasFatec.exceptions.DadosInvalidosException;
 import com.fatec.vagasFatec.exceptions.DadosNaoEncontrados;
+import com.fatec.vagasFatec.exceptions.OperacaoNaoPermitidaException;
 import com.fatec.vagasFatec.model.Candidato;
 import com.fatec.vagasFatec.model.Empresa;
 import com.fatec.vagasFatec.model.Enum.StatusCandidato;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Service
 //Sempre colocar uma anotação de @Service, nestas classes que precisam mexer com componentes, e se aonde você for usar tiver uma anotation do Lombok sem service ele cai
@@ -28,21 +30,40 @@ public class VerificationCodeGenerator {
     private EmpresaRepository empresaRepository;
 
 
-    public  String gerarCodigoValidacao(String email){
+    public  String gerarCodigoValidacao(String email) {
         StringBuilder stringBuilder = new StringBuilder(CODE_LENGHT);
-        Candidato candidato = candidatoRepository.findByEmailCandidato(email).orElseThrow(() -> new DadosNaoEncontrados("Candidato nao encontrado"));
+        Optional<Candidato> candidatoOpt = candidatoRepository.findByEmailCandidato(email);
 
-        for (int i = 0; i < CODE_LENGHT; i++){
-            int index = RANDOM.nextInt(CHARS.length());
-            stringBuilder.append(CHARS.charAt(index));
+        if (candidatoOpt.isPresent()) {
+            Candidato candidato = candidatoOpt.get();
+            for (int i = 0; i < CODE_LENGHT; i++) {
+                int index = RANDOM.nextInt(CHARS.length());
+                stringBuilder.append(CHARS.charAt(index));
 
+            }
+            System.out.println(stringBuilder.toString());
+            candidato.setToken(stringBuilder.toString());
+            candidato.setCreatedAt(LocalDateTime.now());
+            candidato.setExpiresAt(candidato.getCreatedAt().plusMinutes(2));
+            candidatoRepository.save(candidato);
+            return stringBuilder.toString();
         }
-        System.out.println(stringBuilder.toString());
-        candidato.setToken(stringBuilder.toString());
-        candidato.setCreatedAt(LocalDateTime.now());
-        candidato.setExpiresAt(candidato.getCreatedAt().plusMinutes(2));
-        candidatoRepository.save(candidato);
-        return stringBuilder.toString();
+
+        Optional<Empresa> empresaOpt = empresaRepository.findByEmail(email);
+        if (empresaOpt.isPresent()) {
+            Empresa empresa = empresaOpt.get();
+            for (int i = 0; i < CODE_LENGHT; i++) {
+                int index = RANDOM.nextInt(CHARS.length());
+                stringBuilder.append(CHARS.charAt(index));
+            }
+            System.out.println(stringBuilder.toString());
+            empresa.setToken(stringBuilder.toString());
+            empresa.setCreatedAt(LocalDateTime.now());
+            empresa.setExpiresAt(empresa.getCreatedAt().plusMinutes(2));
+            empresaRepository.save(empresa);
+            return stringBuilder.toString();
+        }
+        throw new DadosNaoEncontrados("Email não encontrado nem como candidato nem como empresa");
     }
 
 
