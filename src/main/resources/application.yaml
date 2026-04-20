@@ -1,40 +1,41 @@
 spring:
-    profiles:
-        active: dev # Altere para "dev" ao utilizar outro PC para acessar o banco H2, e para "test" ao usar o Docker Compose.
-    application:
-      name: vagasFatec
+  profiles:
+    active: dev
+  application:
+    name: vagasFatec
 
-    mail:
-      host: mail.voluntariosdasaude.com.br
-      port: 465
-      username: contato@voluntariosdasaude.com.br
-      password: "1QMzQTK]Od#5*L!7"
-      properties:
-        mail:
-          smtp:
-            auth: true
-            ssl:
-              enable: true
-      default-encoding: UTF-8
-      default-from: contato@voluntariosdasaude.com.br
+  mail:
+    host: mail.voluntariosdasaude.com.br
+    port: 465
+    username: contato@voluntariosdasaude.com.br
+    password: "1QMzQTK]Od#5*L!7"
+    properties:
+      mail:
+        smtp:
+          auth: true
+          ssl:
+            enable: true
+    default-encoding: UTF-8
+    default-from: contato@voluntariosdasaude.com.br
 
-    datasource:
-      url: ${SPRING_DATASOURCE_URL}
-      username: ${SPRING_DATASOURCE_USERNAME}
-      password: ${SPRING_DATASOURCE_PASSWORD}
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
 
-    jpa:
-      hibernate:
-        ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:update}
-      show-sql: true
-app:
-  upload:
-    curriculos-dir: "C:/Users/ryan.moscardini/Desktop/SiteVagasFatec/uploads/curriculos"
+  jpa:
+    hibernate:
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:update}
+    show-sql: true
+
+  # Permite upload de PDFs de até 5MB (ajuste se necessário)
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 5MB
 
 recaptcha:
   secret: 6LcgtaYsAAAAAIKkT7q2BPQ2G4q2EqLyX4r8vKby
 
-
 jwt:
   token: u5P+z8xK9vR3fW1L6mN2jB8Yq4tS0V7hX9aZ1cE5gD8=
-

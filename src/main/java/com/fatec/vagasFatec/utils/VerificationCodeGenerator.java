@@ -21,7 +21,7 @@ import java.util.Optional;
 //Sempre colocar uma anotação de @Service, nestas classes que precisam mexer com componentes, e se aonde você for usar tiver uma anotation do Lombok sem service ele cai
 public class VerificationCodeGenerator {
 
-    public static final String CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    public static final String CHARS = "0123456789";
     public static final SecureRandom RANDOM = new SecureRandom();
     public static final int CODE_LENGHT = 6;
     @Autowired

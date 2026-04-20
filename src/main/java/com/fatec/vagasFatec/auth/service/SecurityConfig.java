@@ -23,7 +23,7 @@ import java.util.List;
 
 @Configuration
 @RequiredArgsConstructor
-@SecurityScheme(name = SecurityConfig.SECURITY, type = SecuritySchemeType.HTTP,bearerFormat = "JWT", scheme = "bearer")
+@SecurityScheme(name = SecurityConfig.SECURITY, type = SecuritySchemeType.HTTP, bearerFormat = "JWT", scheme = "bearer")
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthFilter;
@@ -34,47 +34,49 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
-                .cors(cors -> cors.configurationSource(corsConfigurationSource())) // mantém seu CORS
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
 
-                        // === Rotas públicas / sem autenticação ===
-                        .requestMatchers("/api/auth/**").permitAll()                          // login, register auth
-                        .requestMatchers(HttpMethod.POST, "/api/candidatos").permitAll()      // cadastro de candidato
-                        .requestMatchers(HttpMethod.POST, "/api/empresas").permitAll()        // cadastro de empresa
-                        .requestMatchers(HttpMethod.GET, "/api/vagas").permitAll()            // listar vagas abertas (público)
-                        .requestMatchers(HttpMethod.GET, "/api/vagas/**").permitAll()         // detalhes de vaga aberta (se existir)
+                        // === Rotas públicas ===
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/candidatos").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/empresas").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/vagas").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/vagas/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/candidatos/validar").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/candidatos/validar/reenviar").permitAll()
-                        .requestMatchers(HttpMethod.POST,"/api/candidatos/validar/empresa").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/candidatos/validar/empresa").permitAll()
+                        .requestMatchers("/api/candidatos/perfil/todos/**").permitAll()
 
+                        // === Rotas de currículo — MAIS ESPECÍFICAS PRIMEIRO ===
 
-                        // === Rotas de CANDIDATO (ações próprias) ===
+                        // Empresa visualiza currículo de candidato via candidatura (GET com ID na rota)
+                        .requestMatchers(HttpMethod.GET, "/api/candidatos/perfil/curriculo/visualizar/*/candidatura").hasRole("EMPRESA")
+
+                        // Candidato visualiza o próprio currículo
+                        .requestMatchers(HttpMethod.GET, "/api/candidatos/perfil/curriculo/visualizar").hasRole("CANDIDATO")
+
+                        // Candidato faz upload do currículo (PATCH)
+                        .requestMatchers(HttpMethod.PATCH, "/api/candidatos/perfil/curriculo").hasRole("CANDIDATO")
+
+                        // === Rotas de CANDIDATO ===
                         .requestMatchers("/api/candidatos/perfil").hasRole("CANDIDATO")
-                        .requestMatchers("/api/candidatos/perfil/curriculo").hasRole("CANDIDATO")
-                        .requestMatchers("/api/candidatos/perfil/curriculo/visualizar").permitAll() // Para testes, depois limitar para ROLE_CANDIDATO
-                        .requestMatchers("/api/candidaturas/minhas").hasRole("CANDIDATO")     // minhas candidaturas
-                        .requestMatchers(HttpMethod.POST, "/api/candidaturas/vaga/**").hasRole("CANDIDATO")   // se candidatar
+                        .requestMatchers("/api/candidaturas/minhas").hasRole("CANDIDATO")
+                        .requestMatchers(HttpMethod.POST, "/api/candidaturas/vaga/**").hasRole("CANDIDATO")
                         .requestMatchers(HttpMethod.PATCH, "/api/candidaturas/vaga/*/desistir").hasRole("CANDIDATO")
                         .requestMatchers(HttpMethod.GET, "/api/candidaturas/vaga/minhas/*").hasRole("CANDIDATO")
-                        .requestMatchers("/api/candidatos/perfil/todos/**").permitAll() //Vizualizar dados do candidato
 
-                        // === Rotas de EMPRESA (ações próprias) ===
-                        .requestMatchers(HttpMethod.POST, "/api/vagas").hasRole("EMPRESA")               // criar vaga
-                        .requestMatchers("/api/vagas/minhas").hasRole("EMPRESA")                         // minhas vagas
-                        .requestMatchers("/api/vagas/{id}/**").hasRole("EMPRESA")                        // editar, encerrar, reabrir, deletar vaga
-                        .requestMatchers("/api/candidaturas/{idCandidatura}/**").hasRole("EMPRESA")     // status, observação, etc.
-                        .requestMatchers("/perfil/curriculo/visualizar/{id_candidatura}/candidatura").hasRole("EMPRESA")
+                        // === Rotas de EMPRESA ===
+                        .requestMatchers(HttpMethod.POST, "/api/vagas").hasRole("EMPRESA")
+                        .requestMatchers("/api/vagas/minhas").hasRole("EMPRESA")
+                        .requestMatchers("/api/vagas/{id}/**").hasRole("EMPRESA")
+                        .requestMatchers("/api/candidaturas/{idCandidatura}/**").hasRole("EMPRESA")
                         .requestMatchers(HttpMethod.GET, "/api/empresas/perfil").hasRole("EMPRESA")
-                        // === Rotas administrativas (se você tiver ROLE_ADMIN no futuro) ===
-                        // .requestMatchers("/api/candidatos", "/api/empresas", "/api/candidaturas").hasRole("ADMIN")
-                        // .requestMatchers(HttpMethod.PATCH, "/api/candidatos/**/desativar").hasRole("ADMIN")
 
                         // Swagger
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-                        // Tudo o mais exige autenticação (fallback seguro)
+
                         .anyRequest().authenticated()
-
-
                 )
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider())
@@ -89,33 +91,20 @@ public class SecurityConfig {
         provider.setPasswordEncoder(passwordEncoder());
         return provider;
     }
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         return request -> {
             CorsConfiguration config = new CorsConfiguration();
-
-            // Libera TODAS as origens (qualquer domínio, IP, localhost, etc.)
             config.setAllowedOriginPatterns(List.of("*"));
-
-            // Métodos HTTP permitidos
-            config.setAllowedMethods(List.of("*"));  // ou liste explicitamente: "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"
-
-            // Todos os headers (inclui Authorization, Content-Type, etc.)
+            config.setAllowedMethods(List.of("*"));
             config.setAllowedHeaders(List.of("*"));
-
-            // Importante: expõe headers que o frontend pode ler (ex: Authorization)
             config.setExposedHeaders(List.of("Authorization", "Content-Disposition"));
-
-            // Se você estiver enviando credenciais (JWT no header, cookies, etc.)
             config.setAllowCredentials(true);
-
-            // Tempo de cache do preflight (OPTIONS)
-            config.setMaxAge(3600L); // 1 hora
-
+            config.setMaxAge(3600L);
             return config;
         };
     }
-
 
     @Bean
     public PasswordEncoder passwordEncoder() {

@@ -33,10 +33,14 @@ spring:
       ddl-auto: update
     show-sql: true
 
-app:
-  upload:
-    curriculos-dir: "C:/Users/ryan.moscardini/Desktop/SiteVagasFatec/uploads/curriculos"
-    #Para evitar problemas, sempre utilizar caminhos absolutos
+  # Permite upload de PDFs de até 5MB (ajuste se necessário)
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 5MB
+
+recaptcha:
+  secret: 6LcgtaYsAAAAAIKkT7q2BPQ2G4q2EqLyX4r8vKby
 
 jwt:
   token: u5P+z8xK9vR3fW1L6mN2jB8Yq4tS0V7hX9aZ1cE5gD8=

@@ -74,8 +74,12 @@ public class Candidato {
     @Column(name = "data_cadastro")
     private LocalDateTime dataCadastro;
 
-    @Column(name = "curriculo_path")
-    private String caminhoCurriculo;
+    /**
+     * Para PostgreSQL use "BYTEA". Para H2 funciona com os dois.
+     */
+    @Lob
+    @Column(name = "curriculo_dados", columnDefinition = "LONGBLOB")
+    private byte[] curriculo;
 
     @Column(name = "curriculo_nome")
     private String nomeCurriculo;
@@ -83,10 +87,10 @@ public class Candidato {
     @Column(name = "data_alteracao_curriculo")
     private LocalDateTime dataAlteracaoCurriculo;
 
-    //------------------------------------------------------------
+    // ---------------------------------------------------------------
+
     @Column(name = "token", nullable = true, unique = true)
     private String token;
-
 
     @Column(name = "created_at", nullable = true)
     private LocalDateTime createdAt;
@@ -95,7 +99,7 @@ public class Candidato {
     private LocalDateTime expiresAt;
 
     @PrePersist
-    public void prePersist(){
+    public void prePersist() {
         statusCandidato = StatusCandidato.AGUARDANDO;
         dataCadastro = LocalDateTime.now();
         role = Role.ROLE_CANDIDATO;

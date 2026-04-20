@@ -4,126 +4,74 @@ import com.fatec.vagasFatec.exceptions.DadosInvalidosException;
 import com.fatec.vagasFatec.exceptions.DadosNaoEncontrados;
 import com.fatec.vagasFatec.model.Candidato;
 import com.fatec.vagasFatec.repository.CandidatoRepository;
-import jakarta.annotation.PostConstruct;
-import org.springframework.core.io.Resource;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.io.IOException;
-import java.net.MalformedURLException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDateTime;
 
 @RequiredArgsConstructor
 @Service
 public class ConverterCurriculo {
 
-    @Value("${app.upload.curriculos-dir}")
-    private String caminhoCurriculo;
+    private final CandidatoRepository candidatoRepository;
 
-    @PostConstruct
-    public  void init(){
-        new File(caminhoCurriculo).mkdirs();
-    }
-
-    private  final CandidatoRepository candidatoRepository;
-
-
-    public void  salvarCurriculo(MultipartFile arquivo){
-        Long candidatoLogado = SecurityUtil.getCurrentUserId();
+    /**
+     * Salva (ou substitui) o currículo do candidato autenticado diretamente no banco de dados.
+     */
+    public void salvarCurriculo(MultipartFile arquivo) {
+        Long candidatoId = SecurityUtil.getCurrentUserId();
 
         if (arquivo == null || arquivo.isEmpty()) {
             throw new DadosInvalidosException("Nenhum arquivo de currículo enviado");
         }
 
-        // Validação: só PDF e tamanho máximo (ex: 5MB)
+        // Valida: somente PDF
         if (!"application/pdf".equals(arquivo.getContentType())) {
             throw new DadosInvalidosException("Apenas arquivos PDF são permitidos");
         }
-        if (arquivo.getSize() > 5 * 1024 * 1024) { // 5MB
+
+        // Valida: tamanho máximo 5 MB
+        if (arquivo.getSize() > 5L * 1024 * 1024) {
             throw new DadosInvalidosException("Arquivo muito grande. Máximo 5MB");
         }
-
-        String originalFilename = arquivo.getOriginalFilename();
-        String extensao = originalFilename != null && originalFilename.contains(".")
-                ? originalFilename.substring(originalFilename.lastIndexOf("."))
-                : ".pdf";
-
-        // Nome único + timestamp para evitar conflitos
-        String nomeUnico = candidatoLogado + "-" + System.currentTimeMillis() + extensao + originalFilename;
-        String caminhoCompleto = caminhoCurriculo + File.separator + nomeUnico;
-
-        Long candidatoId = SecurityUtil.getCurrentUserId();
 
         Candidato candidato = candidatoRepository.findById(candidatoId)
                 .orElseThrow(() -> new DadosNaoEncontrados("Candidato não encontrado"));
 
-        // 2. FEATURE: Limpeza de arquivo antigo
-        if (candidato.getCaminhoCurriculo() != null) {
-            try {
-                String nomeArquivoAntigo = new java.io.File(candidato.getCaminhoCurriculo()).getName();
-
-                java.nio.file.Path pathAntigo = java.nio.file.Paths.get(caminhoCurriculo)
-                        .resolve(nomeArquivoAntigo)
-                        .normalize();
-
-                // Deleta se o arquivo realmente existir no disco
-                java.nio.file.Files.deleteIfExists(pathAntigo);
-                System.out.println("Arquivo antigo removido com sucesso: " + nomeArquivoAntigo);
-
-            } catch (IOException e) {
-                // Logamos o erro mas permitimos que o upload do novo continue
-                System.err.println("Aviso: Não foi possível deletar o arquivo antigo: " + e.getMessage());
-            }
-        }
-
-
         try {
-            arquivo.transferTo(new File(caminhoCompleto));
-            candidato.setCaminhoCurriculo("/uploads/curriculos/" + nomeUnico);
-            candidato.setNomeCurriculo(originalFilename);
+            candidato.setCurriculo(arquivo.getBytes());
+            candidato.setNomeCurriculo(arquivo.getOriginalFilename());
             candidato.setDataAlteracaoCurriculo(LocalDateTime.now());
-
             candidatoRepository.save(candidato);
         } catch (IOException e) {
-            throw new DadosInvalidosException("Erro ao salvar o currículo: " + e.getMessage());
+            throw new DadosInvalidosException("Erro ao ler o arquivo de currículo: " + e.getMessage());
         }
     }
 
+    /**
+     * Retorna o currículo de um candidato como PDF para download/visualização inline.
+     * Recebe diretamente o objeto Candidato para evitar uma segunda consulta ao banco.
+     */
+    public ResponseEntity<byte[]> visualizarCurriculo(Candidato candidato) {
+        byte[] dados = candidato.getCurriculo();
 
-
-    public ResponseEntity<Resource> visualizarCurriculo(String caminhoCompletoSalvoNoBanco) throws MalformedURLException {
-        if (caminhoCompletoSalvoNoBanco == null || !caminhoCompletoSalvoNoBanco.startsWith("/uploads/curriculos/")) {
-            throw new DadosInvalidosException("Caminho de currículo inválido");
+        if (dados == null || dados.length == 0) {
+            return ResponseEntity.noContent().build();
         }
 
-        // Extrai apenas o nome do arquivo (parte final)
-        String nomeArquivo = caminhoCompletoSalvoNoBanco.substring(caminhoCompletoSalvoNoBanco.lastIndexOf("/") + 1);
-
-        Path arquivoPath = Paths.get(caminhoCurriculo).resolve(nomeArquivo).normalize();
-
-        // Importante: impede path traversal
-        if (!arquivoPath.startsWith(Paths.get(caminhoCurriculo).normalize())) {
-            throw new DadosInvalidosException("Caminho inválido (tentativa de traversal)");
-        }
-
-        UrlResource resource = new UrlResource(arquivoPath.toUri());
-
-        if (!resource.exists() || !resource.isReadable()) {
-            throw new DadosNaoEncontrados("Currículo não encontrado");
-        }
+        String nomeArquivo = candidato.getNomeCurriculo() != null
+                ? candidato.getNomeCurriculo()
+                : "curriculo.pdf";
 
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_PDF)
-                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
-                .body(resource);
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + nomeArquivo + "\"")
+                .header(HttpHeaders.CONTENT_LENGTH, String.valueOf(dados.length))
+                .body(dados);
     }
 }

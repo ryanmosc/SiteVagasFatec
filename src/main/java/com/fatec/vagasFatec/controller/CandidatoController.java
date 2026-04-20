@@ -20,7 +20,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.core.io.Resource;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -29,7 +28,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.net.MalformedURLException;
 import java.util.List;
 
 @RestController
@@ -50,7 +48,7 @@ public class CandidatoController {
     @ApiResponse(responseCode = "201", description = "Candidato registrado com sucesso")
     @ApiResponse(responseCode = "400", description = "Requisição inválida ou candidato já existente")
     @ApiResponse(responseCode = "500", description = "Erro interno no servidor")
-    public ResponseEntity<CandidatoResponseDTO> cadastroInicial (@RequestBody @Valid CandidatoCadastroDTO cadastroDTO){
+    public ResponseEntity<CandidatoResponseDTO> cadastroInicial(@RequestBody @Valid CandidatoCadastroDTO cadastroDTO) {
         CandidatoResponseDTO candidatoResponseDTO = candidatoService.criarCandidato(cadastroDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(candidatoResponseDTO);
     }
@@ -59,7 +57,7 @@ public class CandidatoController {
     @Operation(summary = "Listar todos os candidatos", description = "Retorna uma lista de todos os candidatos cadastrados. Requer privilégios de Administrador.")
     @ApiResponse(responseCode = "200", description = "Lista recuperada com sucesso")
     @ApiResponse(responseCode = "403", description = "Acesso negado - Permissão insuficiente")
-    public ResponseEntity<List<CandidatoResponseDTO>> listarTodoscandidatos (){
+    public ResponseEntity<List<CandidatoResponseDTO>> listarTodosCandidatos() {
         List<CandidatoResponseDTO> responseEntities = candidatoService.listarTodosCandidatos();
         return ResponseEntity.ok().body(responseEntities);
     }
@@ -67,7 +65,7 @@ public class CandidatoController {
     @GetMapping("/perfil")
     @Operation(summary = "Consultar perfil próprio", description = "Recupera os dados detalhados do candidato autenticado na sessão atual.")
     @ApiResponse(responseCode = "200", description = "Dados do perfil retornados com sucesso")
-    public ResponseEntity<CandidatoResponseDTO> listarDadosAlunoPorRa(){
+    public ResponseEntity<CandidatoResponseDTO> listarDadosAlunoPorRa() {
         Long candidatoLogado = SecurityUtil.getCurrentUserId();
         CandidatoResponseDTO candidatoResponseDTO = candidatoService.listarDadosAlunoPorRa(candidatoLogado);
         return ResponseEntity.ok().body(candidatoResponseDTO);
@@ -76,59 +74,71 @@ public class CandidatoController {
     @PatchMapping("/perfil")
     @Operation(summary = "Atualizar informações de perfil", description = "Atualiza campos específicos do perfil do candidato logado.")
     @ApiResponse(responseCode = "200", description = "Perfil atualizado com sucesso")
-    public ResponseEntity<CandidatoResponseDTO> atualizarDadosCandidato (@RequestBody @Valid CandidatoAtualizarPerfilDTo dto){
+    public ResponseEntity<CandidatoResponseDTO> atualizarDadosCandidato(@RequestBody @Valid CandidatoAtualizarPerfilDTo dto) {
         Long candidatoLogado = SecurityUtil.getCurrentUserId();
         CandidatoResponseDTO candidatoResponseDTO = candidatoService.atualizarDadosPerfil(dto, candidatoLogado);
         return ResponseEntity.ok().body(candidatoResponseDTO);
     }
 
+
     @PatchMapping(value = "/perfil/curriculo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @Operation(summary = "Fazer upload de currículo", description = "Envia ou substitui o arquivo de currículo (PDF) do candidato autenticado.")
+    @Operation(summary = "Fazer upload de currículo", description = "Envia ou substitui o arquivo de currículo (PDF) do candidato autenticado. O arquivo é salvo no banco de dados.")
     @ApiResponse(responseCode = "204", description = "Arquivo processado e salvo com sucesso")
+    @ApiResponse(responseCode = "400", description = "Arquivo inválido ou ausente")
     public ResponseEntity<Void> atualizarCurriculo(@RequestParam("curriculo") MultipartFile curriculo) {
         converterCurriculo.salvarCurriculo(curriculo);
         return ResponseEntity.noContent().build();
     }
 
+
     @GetMapping("/perfil/curriculo/visualizar")
-    @Operation(summary = "Visualizar currículo pessoal", description = "Gera o fluxo de visualização do arquivo de currículo do próprio candidato.")
+    @Operation(summary = "Visualizar currículo pessoal", description = "Retorna o PDF do currículo do candidato autenticado diretamente do banco de dados.")
     @ApiResponse(responseCode = "200", description = "Arquivo carregado com sucesso")
     @ApiResponse(responseCode = "204", description = "Candidato não possui currículo cadastrado")
-    public ResponseEntity<Resource> visualizarMeuCurriculo() throws MalformedURLException {
+    public ResponseEntity<byte[]> visualizarMeuCurriculo() {
         Long id = SecurityUtil.getCurrentUserId();
-        Candidato c = candidatoRepository.findById(id)
+        Candidato candidato = candidatoRepository.findById(id)
                 .orElseThrow(() -> new DadosNaoEncontrados("Candidato não encontrado"));
 
-        if (c.getCaminhoCurriculo() == null) {
-            return ResponseEntity.noContent().build();
-        }
-
-        return converterCurriculo.visualizarCurriculo(c.getCaminhoCurriculo());
+        return converterCurriculo.visualizarCurriculo(candidato);
     }
 
-    @GetMapping("/perfil/curriculo/visualizar/{id_candidatura}/candidatura")
-    @Operation(summary = "Visualizar currículo de candidato (Empresa)", description = "Permite que a empresa visualize o currículo vinculado a uma candidatura específica de suas vagas.")
+    @GetMapping("/perfil/curriculo/visualizar/{idCandidatura}/candidatura")
+    @Operation(
+            summary = "Visualizar currículo de candidato (Empresa)",
+            description = "Permite que a empresa visualize o currículo vinculado a uma candidatura específica de suas vagas."
+    )
     @ApiResponse(responseCode = "200", description = "Visualização permitida e arquivo carregado")
+    @ApiResponse(responseCode = "204", description = "Candidato não possui currículo cadastrado")
     @ApiResponse(responseCode = "403", description = "Empresa não possui permissão para visualizar este currículo")
-    public ResponseEntity<Resource> vizualisarCurriculoCandidato(@PathVariable Long id_candidatura) throws MalformedURLException {
-        Long id = SecurityUtil.getCurrentUserId();
-        Candidatura candidatura = candidaturaRepository.findById(id_candidatura).orElseThrow(() -> new DadosNaoEncontrados("Candidatura não encontrada"));
-        Empresa e = empresaRepository.findById(id).orElseThrow(() -> new DadosNaoEncontrados("Empresa não encontrada"));
-        if (e.getId() != candidatura.getVaga().getEmpresa().getId()){
-            throw new RegraDeNegocioVioladaException("Empresa não é dona da vaga");
+    @ApiResponse(responseCode = "404", description = "Candidatura, empresa ou candidato não encontrado")
+    public ResponseEntity<byte[]> visualizarCurriculoCandidato(@PathVariable Long idCandidatura) {
+        Long empresaLogadaId = SecurityUtil.getCurrentUserId();
+
+        Candidatura candidatura = candidaturaRepository.findById(idCandidatura)
+                .orElseThrow(() -> new DadosNaoEncontrados("Candidatura não encontrada"));
+
+        Empresa empresa = empresaRepository.findById(empresaLogadaId)
+                .orElseThrow(() -> new DadosNaoEncontrados("Empresa não encontrada"));
+
+
+        if (!empresa.getId().equals(candidatura.getVaga().getEmpresa().getId())) {
+            throw new RegraDeNegocioVioladaException("Empresa não é dona desta vaga");
         }
-        Candidato c = candidatoRepository.findById(candidatura.getCandidato().getId())
+
+        Candidato candidato = candidatoRepository.findById(candidatura.getCandidato().getId())
                 .orElseThrow(() -> new DadosNaoEncontrados("Candidato não encontrado"));
-        if (c.getCaminhoCurriculo() == null) {
-            return ResponseEntity.noContent().build();
-        }
-        return converterCurriculo.visualizarCurriculo(c.getCaminhoCurriculo());
+
+        return converterCurriculo.visualizarCurriculo(candidato);
     }
 
+    // -----------------------------------------------------------------
+    // Endpoints administrativos
+    // -----------------------------------------------------------------
     @PatchMapping("/admin/{ra}/desativar")
     @Operation(summary = "Inativar candidato", description = "Desativa o acesso de um aluno ao sistema via RA. Requer permissão de Admin.")
     @ApiResponse(responseCode = "200", description = "Candidato desativado com sucesso")
-    public ResponseEntity<Void> desativarCandidato (@PathVariable String raAluno){
+    public ResponseEntity<Void> desativarCandidato(@PathVariable("ra") String raAluno) {
         candidatoService.desativarCandidato(raAluno);
         return ResponseEntity.ok().build();
     }
@@ -136,13 +146,13 @@ public class CandidatoController {
     @PatchMapping("/admin/{ra}/reativar")
     @Operation(summary = "Reativar candidato", description = "Restaura o acesso de um aluno ao sistema via RA. Requer permissão de Admin.")
     @ApiResponse(responseCode = "200", description = "Candidato reativado com sucesso")
-    public ResponseEntity<Void> reativarCandidato (@PathVariable String raAluno){
+    public ResponseEntity<Void> reativarCandidato(@PathVariable("ra") String raAluno) {
         candidatoService.reativarCandidato(raAluno);
         return ResponseEntity.ok().build();
     }
 
     @GetMapping("/perfil/todos/{id}")
-    public ResponseEntity<CandidatoMostrarDTO> mostrarDadosCandidato(@Valid @PathVariable Long id){
+    public ResponseEntity<CandidatoMostrarDTO> mostrarDadosCandidato(@Valid @PathVariable Long id) {
         CandidatoMostrarDTO candidatoMostrarDTO = candidatoService.mostrarDadosCandidato(id);
         return ResponseEntity.ok(candidatoMostrarDTO);
     }

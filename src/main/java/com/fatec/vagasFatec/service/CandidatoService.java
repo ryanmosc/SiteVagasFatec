@@ -46,7 +46,7 @@ public class CandidatoService {
                  candidato.getLinkGithub(),
                  candidato.getBioCandidato(),
                  candidato.getStatusCandidato(),
-                candidato.getCaminhoCurriculo(),
+                null,
                 candidato.getNomeCurriculo()
         );
     }
