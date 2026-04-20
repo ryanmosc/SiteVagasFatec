@@ -1,6 +1,7 @@
 package com.fatec.vagasFatec.auth.controller;
 
 import com.fatec.vagasFatec.auth.service.JwtService;
+import com.fatec.vagasFatec.exceptions.CredenciaisInvalidasException;
 import com.fatec.vagasFatec.exceptions.RegraDeNegocioVioladaException;
 import com.fatec.vagasFatec.model.Candidato;
 import com.fatec.vagasFatec.model.Empresa;
@@ -44,67 +45,73 @@ public class AuthController {
     @ApiResponse(responseCode = "401", description = "Credenciais inválidas")
     @ApiResponse(responseCode = "403", description = "Conta aguardando validação ou inativa")
     public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginRequestDTO request) {
-        // Autentica primeiro (email + senha)
-        Authentication auth = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        request.email(),
-                        request.senha()
-                )
-        );
+        try {
 
-        String email = auth.getName();  // email que foi autenticado com sucesso
 
-        // Tenta encontrar como Candidato
-        Optional<Candidato> optCandidato = candidatoRepository.findByEmailCandidato(email);
+            // Autentica primeiro (email + senha)
+            Authentication auth = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            request.email(),
+                            request.senha()
+                    )
+            );
 
-        if (optCandidato.isPresent()) {
-            Candidato candidato = optCandidato.get();
+            String email = auth.getName();  // email que foi autenticado com sucesso
 
-            // Validações específicas de candidato
-            if (candidato.getStatusCandidato() == StatusCandidato.AGUARDANDO) {
-                String codigo = gerarCodigo.gerarCodigoValidacao(candidato.getEmailCandidato());
-                enviarEmail.enviarEmail(
+            // Tenta encontrar como Candidato
+            Optional<Candidato> optCandidato = candidatoRepository.findByEmailCandidato(email);
+
+            if (optCandidato.isPresent()) {
+                Candidato candidato = optCandidato.get();
+
+                // Validações específicas de candidato
+                if (candidato.getStatusCandidato() == StatusCandidato.AGUARDANDO) {
+                    String codigo = gerarCodigo.gerarCodigoValidacao(candidato.getEmailCandidato());
+                    enviarEmail.enviarEmail(
+                            candidato.getEmailCandidato(),
+                            "OLá, segue abaixo o código para validação de seu registro",
+                            codigo
+                    );
+                    throw new RegraDeNegocioVioladaException(
+                            "Favor validar sua conta. Verifique o e-mail: " +
+                                    candidato.getEmailCandidato() + " e confirme o código"
+                    );
+                }
+
+                if (candidato.getStatusCandidato() != StatusCandidato.ATIVO) {
+                    throw new RegraDeNegocioVioladaException("Usuário Inativo");
+                }
+
+                // Gera token para candidato
+                String token = jwtService.generateToken(
+                        candidato.getId(),
                         candidato.getEmailCandidato(),
-                        "OLá, segue abaixo o código para validação de seu registro",
-                        codigo
+                        candidato.getRole().name()
                 );
-                throw new RegraDeNegocioVioladaException(
-                        "Favor validar sua conta. Verifique o e-mail: " +
-                                candidato.getEmailCandidato() + " e confirme o código"
-                );
+
+                return ResponseEntity.ok(new LoginResponseDTO(token));
             }
 
-            if (candidato.getStatusCandidato() != StatusCandidato.ATIVO) {
-                throw new RegraDeNegocioVioladaException("Usuário Inativo");
+            // Se não é candidato → tenta Empresa
+            Optional<Empresa> optEmpresa = empresaRepository.findByEmail(email);
+
+            if (optEmpresa.isPresent()) {
+                Empresa empresa = optEmpresa.get();
+
+                // Gera token para empresa
+                String token = jwtService.generateToken(
+                        empresa.getId(),
+                        empresa.getEmail(),
+                        empresa.getRole().name()
+                );
+
+                return ResponseEntity.ok(new LoginResponseDTO(token));
             }
 
-            // Gera token para candidato
-            String token = jwtService.generateToken(
-                    candidato.getId(),
-                    candidato.getEmailCandidato(),
-                    candidato.getRole().name()
-            );
+            throw new RegraDeNegocioVioladaException("Usuário não encontrado");
 
-            return ResponseEntity.ok(new LoginResponseDTO(token));
+        } catch (org.springframework.security.core.AuthenticationException e) {
+            throw new CredenciaisInvalidasException("Credenciais inválidas");
         }
-
-        // Se não é candidato → tenta Empresa
-        Optional<Empresa> optEmpresa = empresaRepository.findByEmail(email);
-
-        if (optEmpresa.isPresent()) {
-            Empresa empresa = optEmpresa.get();
-
-            // Gera token para empresa
-            String token = jwtService.generateToken(
-                    empresa.getId(),
-                    empresa.getEmail(),
-                    empresa.getRole().name()
-            );
-
-            return ResponseEntity.ok(new LoginResponseDTO(token));
-        }
-
-        // Caso raro: autenticou mas não achou em nenhum repositório
-        throw new RegraDeNegocioVioladaException("Usuário não encontrado");
     }
 }
