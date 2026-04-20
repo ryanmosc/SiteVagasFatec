@@ -75,12 +75,18 @@ public class CandidatoService {
             throw new RegraDeNegocioVioladaException("reCAPTCHA inválido. Por favor, tente novamente.");
         }
 
+
         if(candidatoRepository.existsByEmailCandidato(dto.emailCandidato())){
             throw  new EntidadeJaExistenteException("E-mail já cadastrado");
         }
         if(candidatoRepository.existsByRaAluno(dto.raAluno())){
             throw new EntidadeJaExistenteException("RA já cadastrado");
         }
+        if (dto.senha().length() < 8){
+            throw new RegraDeNegocioVioladaException("A senha deve conter ao menos 8 caracteres");
+        }
+
+
 
         Candidato candidato = new Candidato();
                 candidato.setNomeCompleto(dto.nomeCompleto());

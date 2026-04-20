@@ -72,6 +72,9 @@ public class EmpresaService {
         if(empresaRepository.existsByEmail(dto.email())){
             throw  new EntidadeJaExistenteException("E-mail já cadastrado");
         }
+        if (dto.senha().length() < 8){
+            throw new RegraDeNegocioVioladaException("A senha deve conter ao menos 8 caracteres");
+        }
 
 
         Empresa salva = new Empresa();
