@@ -91,7 +91,7 @@ public class CandidaturaService {
         if (candidatura.getVaga().getStatusvaga() == StatusVaga.ENCERRADA){
             throw new RegraDeNegocioVioladaException("Vaga já encerrada");
         }
-        if (candidatura.getStatus() == StatusCandidatura.REJEITADO || candidatura.getStatus() == StatusCandidatura.APROVADO) {
+        if (candidatura.getStatus() == StatusCandidatura.REJEITADO ) {
             throw new RegraDeNegocioVioladaException("Processo seletivo já finalizado");
         }
         if (candidatura.getStatus() == StatusCandidatura.DESISTIU){
@@ -102,7 +102,7 @@ public class CandidaturaService {
         candidaturaRepository.save(candidatura);
     }
 
-    //Empresa alterar Status candidatura (APROVADO / REJEITADO) (Somente empressas podem)
+    //Empresa alterar Status candidatura (APROVADO / REJEITADO / Analise) (Somente empressas podem)
     public void alterarStatusCandidatura (Long idCandidatura, Long idEmpresa, StatusCandidatura novoStatus){
         Candidatura candidatura = candidaturaRepository.findById(idCandidatura).orElseThrow(() -> new RuntimeException("Candidatura não encontrada"));
         Candidato candidato = candidatoRepository.findById(candidatura.getCandidato().getId()).orElseThrow(() -> new RuntimeException("Candidato não encontrado"));
@@ -119,12 +119,14 @@ public class CandidaturaService {
             throw new RegraDeNegocioVioladaException("Empresa está inativa");
         }
 
+
         if (candidatura.getStatus() == StatusCandidatura.APROVADO ||
                 candidatura.getStatus() == StatusCandidatura.REJEITADO) {
             throw new RegraDeNegocioVioladaException("Processo já finalizado");
         }
 
-        if(novoStatus != StatusCandidatura.APROVADO && novoStatus != StatusCandidatura.REJEITADO){
+
+        if(novoStatus != StatusCandidatura.APROVADO && novoStatus != StatusCandidatura.REJEITADO && novoStatus != StatusCandidatura.EM_ANALISE){
             throw new DadosInvalidosException("Status invalido");
                                 }
 
