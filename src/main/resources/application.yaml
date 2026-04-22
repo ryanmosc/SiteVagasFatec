@@ -1,14 +1,15 @@
 spring:
   profiles:
-    active: dev
+    active: prod
+
   application:
     name: vagasFatec
 
   mail:
-    host: mail.voluntariosdasaude.com.br
-    port: 465
-    username: contato@voluntariosdasaude.com.br
-    password: "1QMzQTK]Od#5*L!7"
+    host: ${MAIL_HOST}
+    port: ${MAIL_PORT}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
     properties:
       mail:
         smtp:
@@ -16,7 +17,7 @@ spring:
           ssl:
             enable: true
     default-encoding: UTF-8
-    default-from: contato@voluntariosdasaude.com.br
+    default-from: ${MAIL_USERNAME}
 
   datasource:
     url: ${SPRING_DATASOURCE_URL}
@@ -28,14 +29,13 @@ spring:
       ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:update}
     show-sql: true
 
-  # Permite upload de PDFs de até 5MB (ajuste se necessário)
   servlet:
     multipart:
       max-file-size: 5MB
       max-request-size: 5MB
 
 recaptcha:
-  secret: 6LcgtaYsAAAAAIKkT7q2BPQ2G4q2EqLyX4r8vKby
+  secret: ${RECAPTCHA_SECRET}
 
 jwt:
-  token: u5P+z8xK9vR3fW1L6mN2jB8Yq4tS0V7hX9aZ1cE5gD8=
+  token: ${JWT_TOKEN}
