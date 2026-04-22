@@ -63,7 +63,7 @@ public class VagasService {
         vaga.setEmpresa(empresaLogada);
 
 
-        if (vaga.getCursoVaga() == CursosEnum.TODOS){
+        if (vaga.getCursoVaga() == null){
             vaga.setCursoVaga(null);
         }
 
