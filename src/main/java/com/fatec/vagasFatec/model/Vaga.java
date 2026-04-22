@@ -41,7 +41,7 @@ public class Vaga {
     @Column(columnDefinition = "TEXT")
     private String descricaoVaga;
 
-    @NotNull(message = "Erro: O curso da vaga deve ser selecionado")
+
     @Enumerated(EnumType.STRING)
     @Column(name = "cursoVaga")
     private CursosEnum cursoVaga;

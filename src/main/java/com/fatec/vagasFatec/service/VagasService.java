@@ -63,8 +63,14 @@ public class VagasService {
         vaga.setEmpresa(empresaLogada);
 
 
+        if (vaga.getCursoVaga() == CursosEnum.TODOS){
+            vaga.setCursoVaga(null);
+        }
+
         // 4. Salva
         Vaga salva = vagarepository.save(vaga);
+
+
 
         return converteVagas(salva);
     }
