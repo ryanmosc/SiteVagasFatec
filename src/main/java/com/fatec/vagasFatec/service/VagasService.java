@@ -62,6 +62,7 @@ public class VagasService {
         // 3. Ignora qualquer empresa que venha no body e seta a correta
         vaga.setEmpresa(empresaLogada);
 
+
         // 4. Salva
         Vaga salva = vagarepository.save(vaga);
 

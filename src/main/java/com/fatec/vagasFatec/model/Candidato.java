@@ -76,6 +76,7 @@ public class Candidato {
 
     /**
      * Para PostgreSQL use "BYTEA". Para H2 funciona com os dois.
+     * A anotation @Lob, só funciona em bancos que não são Postgres
      */
     //@Lob
     @Column(name = "curriculo_dados", columnDefinition = "BYTEA")
