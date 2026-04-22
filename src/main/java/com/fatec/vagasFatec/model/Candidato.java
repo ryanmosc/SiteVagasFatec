@@ -77,7 +77,7 @@ public class Candidato {
     /**
      * Para PostgreSQL use "BYTEA". Para H2 funciona com os dois.
      */
-    @Lob
+    //@Lob
     @Column(name = "curriculo_dados", columnDefinition = "BYTEA")
     private byte[] curriculo;
 
