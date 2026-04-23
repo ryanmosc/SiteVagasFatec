@@ -64,6 +64,9 @@ public class Candidato {
     @Column(name = "link_github", columnDefinition = "TEXT")
     private String linkGithub;
 
+    @Column(name = "link_portifolio", columnDefinition = "TEXT")
+    private String linkPortifolio;
+
     @Column(name = "bio_candidato", columnDefinition = "TEXT")
     private String bioCandidato;
 

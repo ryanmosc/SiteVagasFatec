@@ -8,6 +8,7 @@ public record CandidatoMostrarDTO(
         String telefone,
         String cidade,
         String linkedin,
+        String portifolio,
         String  github,
         String bioCandidato
 

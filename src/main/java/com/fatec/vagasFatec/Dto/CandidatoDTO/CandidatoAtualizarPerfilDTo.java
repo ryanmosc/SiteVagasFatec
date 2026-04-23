@@ -10,6 +10,7 @@ public record CandidatoAtualizarPerfilDTo(
         String cidade,
         String linkedin,
         String  github,
+        String portifolio,
         String bio,
         LocalDate dataNascimento,
         MultipartFile curriculo

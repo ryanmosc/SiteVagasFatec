@@ -16,6 +16,7 @@ public record CandidatoResponseDTO(
         String cidade,
         String linkLinkedin,
         String linkGithub,
+        String linkPortifolio,
         String bioCandidato,
         StatusCandidato statusCandidato,
         String caminhoCurriculo,

@@ -44,6 +44,7 @@ public class CandidatoService {
                  candidato.getCidade(),
                  candidato.getLinkLinkedin(),
                  candidato.getLinkGithub(),
+                 candidato.getLinkPortifolio(),
                  candidato.getBioCandidato(),
                  candidato.getStatusCandidato(),
                 null,
@@ -126,6 +127,9 @@ public class CandidatoService {
         if(dadosPerfil.github() != null) {
             candidato.setLinkGithub(dadosPerfil.github());
         }
+        if (dadosPerfil.portifolio() != null){
+            candidato.setLinkPortifolio(dadosPerfil.portifolio());
+        }
         if(dadosPerfil.bio() != null) {
             candidato.setBioCandidato(dadosPerfil.bio());
         }
@@ -180,6 +184,7 @@ public class CandidatoService {
                 candidato.getCidade(),
                 candidato.getLinkLinkedin(),
                 candidato.getLinkGithub(),
+                candidato.getLinkPortifolio(),
                 candidato.getBioCandidato()
         );
     }
