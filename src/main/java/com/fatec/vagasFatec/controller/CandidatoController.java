@@ -15,6 +15,7 @@ import com.fatec.vagasFatec.repository.CandidaturaRepository;
 import com.fatec.vagasFatec.repository.EmpresaRepository;
 import com.fatec.vagasFatec.service.CandidatoService;
 import com.fatec.vagasFatec.utils.ConverterCurriculo;
+import com.fatec.vagasFatec.utils.ConverterFotoPerfil;
 import com.fatec.vagasFatec.utils.SecurityUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -39,6 +40,7 @@ public class CandidatoController {
 
     private final CandidatoService candidatoService;
     private final ConverterCurriculo converterCurriculo;
+    private final ConverterFotoPerfil converterFotoPerfil;
     private final CandidatoRepository candidatoRepository;
     private final EmpresaRepository empresaRepository;
     private final CandidaturaRepository candidaturaRepository;
@@ -90,6 +92,15 @@ public class CandidatoController {
         return ResponseEntity.noContent().build();
     }
 
+    @PatchMapping(value = "/perfil/foto", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Fazer upload de foto de perfil", description = "Envia ou substitui o arquivo de foto de perfil do candidato autenticado. O arquivo é salvo no banco de dados.")
+    @ApiResponse(responseCode = "204", description = "Arquivo processado e salvo com sucesso")
+    @ApiResponse(responseCode = "400", description = "Arquivo inválido ou ausente")
+    public ResponseEntity<Void> atualizarFotoPerfil(@RequestParam ("fotoPerfil") MultipartFile fotoPerfil){
+        converterFotoPerfil.salvarFotoPerfil(fotoPerfil);
+        return ResponseEntity.noContent().build();
+    }
+
 
     @GetMapping("/perfil/curriculo/visualizar")
     @Operation(summary = "Visualizar currículo pessoal", description = "Retorna o PDF do currículo do candidato autenticado diretamente do banco de dados.")
@@ -102,6 +113,21 @@ public class CandidatoController {
 
         return converterCurriculo.visualizarCurriculo(candidato);
     }
+
+
+    @GetMapping("/perfil/foto/visualizar")
+    @Operation(summary = "Visualizar foto pessoal", description = "Retorna a foto do candidato autenticado diretamente do banco de dados.")
+    @ApiResponse(responseCode = "200", description = "Arquivo carregado com sucesso")
+    @ApiResponse(responseCode = "204", description = "Candidato não possui foto cadastrada")
+    public ResponseEntity<byte[]> visualizarMinhaFoto() {
+        Long id = SecurityUtil.getCurrentUserId();
+        Candidato candidato = candidatoRepository.findById(id)
+                .orElseThrow(() -> new DadosNaoEncontrados("Candidato não encontrado"));
+
+        return converterFotoPerfil.visualizarFotoPerfil(candidato);
+    }
+
+
 
     @GetMapping("/perfil/curriculo/visualizar/{idCandidatura}/candidatura")
     @Operation(
@@ -130,6 +156,44 @@ public class CandidatoController {
                 .orElseThrow(() -> new DadosNaoEncontrados("Candidato não encontrado"));
 
         return converterCurriculo.visualizarCurriculo(candidato);
+    }
+
+
+
+
+
+
+
+
+
+
+    @GetMapping("/perfil/foto/visualizar/{idCandidatura}/candidatura")
+    @Operation(
+            summary = "Visualizar foto de candidato (Empresa)",
+            description = "Permite que a empresa visualize a foto  vinculada a uma candidatura específica de suas vagas."
+    )
+    @ApiResponse(responseCode = "200", description = "Visualização permitida e arquivo carregado")
+    @ApiResponse(responseCode = "204", description = "Candidato não possui foto cadastrada")
+    @ApiResponse(responseCode = "403", description = "Empresa não possui permissão para visualizar esta foto")
+    @ApiResponse(responseCode = "404", description = "Candidatura, empresa ou candidato não encontrado")
+    public ResponseEntity<byte[]> visualiarFotoCandidato(@PathVariable Long idCandidatura) {
+        Long empresaLogadaId = SecurityUtil.getCurrentUserId();
+
+        Candidatura candidatura = candidaturaRepository.findById(idCandidatura)
+                .orElseThrow(() -> new DadosNaoEncontrados("Candidatura não encontrada"));
+
+        Empresa empresa = empresaRepository.findById(empresaLogadaId)
+                .orElseThrow(() -> new DadosNaoEncontrados("Empresa não encontrada"));
+
+
+        if (!empresa.getId().equals(candidatura.getVaga().getEmpresa().getId())) {
+            throw new RegraDeNegocioVioladaException("Empresa não é dona desta vaga");
+        }
+
+        Candidato candidato = candidatoRepository.findById(candidatura.getCandidato().getId())
+                .orElseThrow(() -> new DadosNaoEncontrados("Candidato não encontrado"));
+
+        return converterFotoPerfil.visualizarFotoPerfil(candidato);
     }
 
     // -----------------------------------------------------------------

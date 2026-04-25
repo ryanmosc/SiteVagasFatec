@@ -85,11 +85,26 @@ public class Candidato {
     @Column(name = "curriculo_dados", columnDefinition = "BYTEA")
     private byte[] curriculo;
 
+
+
     @Column(name = "curriculo_nome")
     private String nomeCurriculo;
 
     @Column(name = "data_alteracao_curriculo")
     private LocalDateTime dataAlteracaoCurriculo;
+
+    // ---------------------------------------------------------------
+    // Foto de perfil
+    @Column(name = "foto_perfil", columnDefinition = "BYTEA")
+    private byte[] fotoPerfil;
+
+    @Column(name = "foto_perfil_nome")
+    private String nomeFoto;
+
+    @Column(name = "data_alteracao_foto")
+    private LocalDateTime dataAlteracaoFoto;
+
+
 
     // ---------------------------------------------------------------
 

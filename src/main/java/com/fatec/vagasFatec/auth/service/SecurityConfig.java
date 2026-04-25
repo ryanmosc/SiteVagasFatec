@@ -53,11 +53,20 @@ public class SecurityConfig {
                         // Empresa visualiza currículo de candidato via candidatura (GET com ID na rota)
                         .requestMatchers(HttpMethod.GET, "/api/candidatos/perfil/curriculo/visualizar/*/candidatura").hasRole("EMPRESA")
 
+                        // Empresa visualiza foto do candidato via candidatura (GET com ID na rota)
+                        .requestMatchers(HttpMethod.GET, "/api/candidatos/perfil/foto/visualizar/*/candidatura").hasRole("EMPRESA")
+
                         // Candidato visualiza o próprio currículo
                         .requestMatchers(HttpMethod.GET, "/api/candidatos/perfil/curriculo/visualizar").hasRole("CANDIDATO")
 
+                        // Candidato visualiza a sua propria foto de perfil
+                        .requestMatchers(HttpMethod.GET, "/api/candidatos/perfil/foto/visualizar").hasRole("CANDIDATO")
+
                         // Candidato faz upload do currículo (PATCH)
                         .requestMatchers(HttpMethod.PATCH, "/api/candidatos/perfil/curriculo").hasRole("CANDIDATO")
+
+                        // Candidato faz upload de sua foto de perfil (PATCH)
+                        .requestMatchers(HttpMethod.PATCH, "/api/candidatos/perfil/foto").hasRole("CANDIDATO")
 
                         // === Rotas de CANDIDATO ===
                         .requestMatchers("/api/candidatos/perfil").hasRole("CANDIDATO")
