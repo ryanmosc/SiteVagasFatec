@@ -3,6 +3,7 @@ package com.fatec.vagasFatec.service;
 import com.fatec.vagasFatec.Dto.EmpresaDTO.EmpreRequestDTO;
 import com.fatec.vagasFatec.Dto.EmpresaDTO.EmpresaAtualizarDTO;
 import com.fatec.vagasFatec.Dto.EmpresaDTO.EmpresaResponseDTO;
+import com.fatec.vagasFatec.auth.service.RecaptchaService;
 import com.fatec.vagasFatec.exceptions.DadosInvalidosException;
 import com.fatec.vagasFatec.exceptions.DadosNaoEncontrados;
 import com.fatec.vagasFatec.exceptions.EntidadeJaExistenteException;
@@ -28,6 +29,7 @@ public class EmpresaService {
     private final PasswordEncoder passwordEncoder;
     private final EmailSender enviarEmail;
     private final VerificationCodeGenerator gerarCodigo;
+    private final RecaptchaService recaptchaService;
 
     // Metodo auxiliar de conversão
     private EmpresaResponseDTO converter(Empresa empresa) {
@@ -74,6 +76,14 @@ public class EmpresaService {
         }
         if (dto.senha().length() < 8){
             throw new RegraDeNegocioVioladaException("A senha deve conter ao menos 8 caracteres");
+        }
+        if (dto.captcha() == null || dto.captcha().isBlank()) {
+            throw new RegraDeNegocioVioladaException("Token do reCAPTCHA não fornecido.");
+        }
+
+        boolean captchaValido = recaptchaService.validar(dto.captcha());
+        if (!captchaValido) {
+            throw new RegraDeNegocioVioladaException("reCAPTCHA inválido. Por favor, tente novamente.");
         }
 
 

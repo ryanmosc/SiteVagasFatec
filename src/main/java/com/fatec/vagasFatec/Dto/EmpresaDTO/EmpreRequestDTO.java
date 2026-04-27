@@ -8,6 +8,7 @@ public record EmpreRequestDTO(
         String email,
         String senha,
         String cnpj,
-        String telefone
+        String telefone,
+        String captcha
 ) {
 }
