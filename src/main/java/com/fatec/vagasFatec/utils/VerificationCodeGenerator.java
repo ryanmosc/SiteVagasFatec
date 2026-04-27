@@ -1,6 +1,7 @@
 package com.fatec.vagasFatec.utils;
 
 import com.fatec.vagasFatec.Dto.CandidatoDTO.ValidarCandidatoDTO;
+import com.fatec.vagasFatec.Dto.EmpresaDTO.ValidarEmpresaDTO;
 import com.fatec.vagasFatec.exceptions.DadosInvalidosException;
 import com.fatec.vagasFatec.exceptions.DadosNaoEncontrados;
 import com.fatec.vagasFatec.exceptions.OperacaoNaoPermitidaException;
@@ -89,10 +90,10 @@ public class VerificationCodeGenerator {
 
     }
 
-    public String validarCodigoEmpresa(ValidarCandidatoDTO validarCandidatoDTO){
-        Empresa empresa = empresaRepository.findByEmail(validarCandidatoDTO.email()).orElseThrow(() -> new DadosNaoEncontrados("Empresa nao encontrada"));
+    public String validarCodigoEmpresa(ValidarEmpresaDTO validarEmpresaDTO){
+        Empresa empresa = empresaRepository.findByEmail(validarEmpresaDTO.email()).orElseThrow(() -> new DadosNaoEncontrados("Empresa nao encontrada"));
 
-        if(!validarCandidatoDTO.codigoEmail().equals(empresa.getToken())){
+        if(!validarEmpresaDTO.codigoEmail().equals(empresa.getToken())){
             throw new DadosInvalidosException("Token está errado");
         }
         if (LocalDateTime.now().isAfter(empresa.getExpiresAt())) {

@@ -1,6 +1,7 @@
 package com.fatec.vagasFatec.utils;
 
 import com.fatec.vagasFatec.Dto.CandidatoDTO.ValidarCandidatoDTO;
+import com.fatec.vagasFatec.Dto.EmpresaDTO.ValidarEmpresaDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,7 +21,7 @@ public class ValidarCodigoController {
     }
 
     @PostMapping("/empresa")
-    public ResponseEntity<Void> validarCodigoEmpresa(@RequestBody ValidarCandidatoDTO dto){
+    public ResponseEntity<Void> validarCodigoEmpresa(@RequestBody ValidarEmpresaDTO dto){
         verificationCodeGenerator.validarCodigoEmpresa(dto);
         return ResponseEntity.noContent().build();
     }

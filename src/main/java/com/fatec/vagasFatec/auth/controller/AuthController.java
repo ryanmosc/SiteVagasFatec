@@ -6,6 +6,7 @@ import com.fatec.vagasFatec.exceptions.RegraDeNegocioVioladaException;
 import com.fatec.vagasFatec.model.Candidato;
 import com.fatec.vagasFatec.model.Empresa;
 import com.fatec.vagasFatec.model.Enum.StatusCandidato;
+import com.fatec.vagasFatec.model.Enum.StatusEmpresa;
 import com.fatec.vagasFatec.repository.CandidatoRepository;
 import com.fatec.vagasFatec.repository.EmpresaRepository;
 import com.fatec.vagasFatec.utils.EmailSender;
@@ -97,6 +98,22 @@ public class AuthController {
 
             if (optEmpresa.isPresent()) {
                 Empresa empresa = optEmpresa.get();
+                if (empresa.getStatusEmpresa() == StatusEmpresa.AGUARDANDO) {
+                    String codigo = gerarCodigo.gerarCodigoValidacao(empresa.getEmail());
+                    enviarEmail.enviarEmail(
+                            empresa.getEmail(),
+                            "OLá, segue abaixo o código para validação de seu registro",
+                            codigo
+                    );
+                    throw new RegraDeNegocioVioladaException(
+                            "Favor validar sua conta. Verifique o e-mail: " +
+                                    empresa.getEmail()+ " e confirme o código"
+                    );
+                }
+
+                if (empresa.getStatusEmpresa() != StatusEmpresa.ATIVO) {
+                    throw new RegraDeNegocioVioladaException("Usuário Inativo");
+                }
 
                 // Gera token para empresa
                 String token = jwtService.generateToken(

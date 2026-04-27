@@ -78,7 +78,7 @@ public class Empresa {
 
     @PrePersist
     public void prePersist(){
-       statusEmpresa = StatusEmpresa.ATIVO;
+       statusEmpresa = StatusEmpresa.AGUARDANDO;
        role =Role.ROLE_EMPRESA;
     }
 }

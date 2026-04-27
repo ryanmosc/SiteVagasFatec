@@ -83,8 +83,10 @@ public class EmpresaService {
         salva.setEmail(dto.email());
         salva.setCnpj(dto.cnpj());
         salva.setTelefone(dto.telefone());
+        salva.setStatusEmpresa(StatusEmpresa.AGUARDANDO);
         salva.setSenha(passwordEncoder.encode(dto.senha()));
         salva.setRole(Role.ROLE_EMPRESA);
+        System.out.println(salva.getStatusEmpresa() + salva.getEmail());
         empresaRepository.save(salva);
 
 
