@@ -46,7 +46,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/candidatos/validar").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/candidatos/validar/reenviar").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/candidatos/validar/empresa").permitAll()
-                        .requestMatchers("/api/candidatos/perfil/todos/**").permitAll()
+                        .requestMatchers("/api/candidatos/perfil/todos/**").hasRole("EMPRESA")
 
                         // === Rotas de currículo — MAIS ESPECÍFICAS PRIMEIRO ===
 

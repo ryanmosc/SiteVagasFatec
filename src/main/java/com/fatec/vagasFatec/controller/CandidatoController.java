@@ -215,9 +215,12 @@ public class CandidatoController {
         return ResponseEntity.ok().build();
     }
 
+
     @GetMapping("/perfil/todos/{id}")
     public ResponseEntity<CandidatoMostrarDTO> mostrarDadosCandidato(@Valid @PathVariable Long id) {
         CandidatoMostrarDTO candidatoMostrarDTO = candidatoService.mostrarDadosCandidato(id);
         return ResponseEntity.ok(candidatoMostrarDTO);
     }
+
+
 }
